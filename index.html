@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HSK 3 Orthographic Mastery • Đặc Trị Mù Mặt Chữ Hán</title>
+
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#070b14'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Hanzi Writer 3.5 CDN (Muscle Memory & Stroke Order Quiz) -->
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0f19" />
+
+  <!-- Custom Styles & Animations -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="anti-pinyin-strict min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- ========================================================================
+       ANTI-PINYIN PEEK PENALTY FLOATING TOAST
+       ======================================================================== -->
+  <div
+    id="anti-pinyin-toast"
+    class="hidden fixed bottom-5 right-5 z-50 max-w-md px-4 py-3 rounded-2xl bg-rose-950/95 border-2 border-rose-500 text-rose-200 text-xs shadow-2xl backdrop-blur-md animate-bounce"
+  ></div>
+
+  <!-- ========================================================================
+       TOP HEADER & COGNITIVE TELEMETRY BAR
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
+      <!-- Top Row: Brand + Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center font-hanzi-serif text-2xl font-black text-white shadow-lg shadow-indigo-500/25">
+            汉
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">
+                HSK 3 Orthographic Lab
+              </h1>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                HSK 标准教程 3 (Bài 1-20)
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">
+              Hệ thống Khoa học Nhận thức Đặc trị "Nhớ Pinyin nhưng Mù Mặt Chữ Hán"
+            </p>
+          </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select
+            id="global-lesson-select"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-200 border border-slate-700 focus:border-indigo-500 focus:outline-none"
+          ></select>
+
+          <button
+            type="button"
+            id="btn-toggle-antipinyin"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1.5 transition"
+            title="Ẩn hoàn toàn Pinyin. Nhìn trộm bằng phím H sẽ bị ghi nhận và trừ điểm Mastery!"
+          >
+            🛡️ Cai Nghiện Pinyin: BẬT
+          </button>
+
+          <button
+            type="button"
+            id="btn-toggle-tones"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition"
+            title="Thanh 1 Đỏ, Thanh 2 Cam, Thanh 3 Lục, Thanh 4 Lam, Thanh nhẹ Xám"
+          >
+            🎨 Màu Thanh Điệu: BẬT
+          </button>
+
+          <button
+            type="button"
+            id="btn-open-data-modal"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-indigo-500/30 transition"
+          >
+            📥 Quản Lý Dữ Liệu
+          </button>
+
+          <button
+            type="button"
+            id="btn-toggle-theme"
+            class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition"
+          >
+            🌙 Dark
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Navigation Tabs & Live Telemetry Pills -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/60">
+        <nav class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            data-nav-tab="flashcard"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 transition flex items-center gap-1.5"
+          >
+            <span>🃏</span>
+            <span>Flashcard 3D & Tập Viết</span>
+          </button>
+          <button
+            type="button"
+            data-nav-tab="games"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
+          >
+            <span>🎮</span>
+            <span>8 Minigame &amp; Đấu Boss</span>
+          </button>
+          <button
+            type="button"
+            data-nav-tab="reading"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
+          >
+            <span>📜</span>
+            <span>Bài Khóa Mù Pinyin</span>
+          </button>
+          <button
+            type="button"
+            data-nav-tab="radicals"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
+          >
+            <span>🧩</span>
+            <span>Học Bộ Thủ (50+ Bộ)</span>
+          </button>
+          <button
+            type="button"
+            data-nav-tab="vocab"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
+          >
+            <span>📖</span>
+            <span>Kho Từ &amp; Chiết Tự (290 Từ)</span>
+          </button>
+          <button
+            type="button"
+            data-nav-tab="analytics"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
+          >
+            <span>📊</span>
+            <span>Chẩn Đoán Mù Chữ (QA)</span>
+          </button>
+        </nav>
+
+        <!-- Quick Telemetry Stats -->
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <button
+            type="button"
+            id="btn-start-daily-session"
+            class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold transition flex items-center gap-1"
+            title="Tự động lọc 10 từ: Sổ Thù Vặt + Đến hạn SM-2 + Từ mới trong bài"
+          >
+            <span>⚡ Học Nhanh 10p</span>
+          </button>
+          <div class="flex items-center gap-1 text-slate-400">
+            <span>Thuộc:</span>
+            <strong id="stat-header-mastered" class="text-emerald-400 font-mono-code">0/0</strong>
+          </div>
+          <div class="flex items-center gap-1 text-slate-400">
+            <span>SM-2:</span>
+            <strong id="stat-header-due" class="text-indigo-400 font-mono-code">0</strong>
+          </div>
+          <div class="flex items-center gap-1 text-slate-400" title="Số lần bạn phải bấm H hoặc giữ chuột xem trộm Pinyin">
+            <span>Peek:</span>
+            <strong id="stat-header-peeks" class="text-amber-400 font-mono-code">0</strong>
+          </div>
+          <button
+            type="button"
+            data-action="start-targeted-drill"
+            class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold transition flex items-center gap-1"
+          >
+            <span>🎯 Đặc trị:</span>
+            <span id="stat-header-criminals" class="font-mono-code">0</span>
+            <span>từ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MAIN CONTENT WORKSPACE
+       ======================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+
+    <!-- ======================================================================
+         VIEW 1: FLASHCARD 3D (SM-2) + HANZI WRITER MUSCLE MEMORY STUDIO
+         ====================================================================== -->
+    <section id="view-flashcard" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- LEFT 7 COLS: 3D SM-2 FLASHCARD -->
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Card Top Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+            <div class="flex items-center gap-2">
+              <span id="fc-counter" class="px-2.5 py-1 rounded-lg bg-slate-800 text-indigo-300 font-mono-code text-xs font-bold">1 / 20</span>
+              <span id="fc-lesson-badge" class="text-xs font-semibold text-slate-300 truncate max-w-[200px] sm:max-w-xs">Bài 1</span>
+            </div>
+
+            <!-- 3-Dimension Recall Switcher (Including Dictation 听写) -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                data-fc-dim="1"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition"
+                title="Mặt trước chỉ hiện Chữ Hán 80px"
+              >
+                Chiều 1: Mặt Chữ → Nghĩa
+              </button>
+              <button
+                type="button"
+                data-fc-dim="2"
+                class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
+                title="Mặt trước chỉ hiện Nghĩa Việt + Audio, bắt não nhớ bộ thủ"
+              >
+                Chiều 2: Nghĩa → Nhớ Chữ
+              </button>
+              <button
+                type="button"
+                data-fc-dim="3"
+                class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-amber-300 hover:bg-slate-700 transition"
+                title="Chế độ Chính Tả (听写): Nghe âm thanh → Tự viết chữ Hán hoặc gõ đáp án"
+              >
+                Chiều 3: 🎧 Chính Tả (听写)
+              </button>
+            </div>
+
+            <div id="fc-mastery-badge" class="px-2.5 py-1 rounded-full text-xs font-bold border">Mastery: 0%</div>
+          </div>
+
+          <!-- 3D Flip Card Stage -->
+          <div class="perspective-container">
+            <div
+              id="flashcard-3d-box"
+              class="flashcard-3d cursor-pointer select-none"
+            >
+              <!-- FRONT FACE -->
+              <div
+                id="fc-front-content"
+                class="flashcard-face bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-slate-800 hover:border-indigo-500/50 shadow-2xl flex flex-col justify-center"
+              ></div>
+
+              <!-- BACK FACE -->
+              <div
+                id="fc-back-content"
+                class="flashcard-face flashcard-back bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-indigo-500/50 shadow-2xl"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Navigation & Flip Controls -->
+          <div class="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              id="btn-fc-prev"
+              class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 transition flex items-center gap-1.5"
+            >
+              <span class="kbd-pill">←</span>
+              <span>Từ trước</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-fc-flip"
+              class="flex-1 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold border border-indigo-500/30 transition"
+            >
+              🔄 Lật thẻ 3D (<span class="kbd-pill">Space</span>) • Giữ <span class="kbd-pill">H</span> xem trộm Pinyin
+            </button>
+
+            <button
+              type="button"
+              id="btn-fc-next"
+              class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 transition flex items-center gap-1.5"
+            >
+              <span>Từ tiếp</span>
+              <span class="kbd-pill">→</span>
+            </button>
+          </div>
+
+          <!-- Anki SM-2 4-Level Grading Bar -->
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="font-bold uppercase tracking-wider text-slate-300">🧠 Đánh giá mức độ nhớ mặt chữ (Thuật toán Anki SM-2):</span>
+              <span>Bấm phím số <kbd class="kbd-pill">1</kbd> - <kbd class="kbd-pill">4</kbd></span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <button
+                type="button"
+                data-sm2-grade="1"
+                class="p-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-left transition group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold text-rose-400">Mù chữ</span>
+                  <span class="kbd-pill text-rose-300">1</span>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">Lặp lại sau 1 phút • Vào Sổ Thù Vặt</div>
+              </button>
+
+              <button
+                type="button"
+                data-sm2-grade="2"
+                class="p-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-left transition group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold text-amber-400">Nhớ mang máng</span>
+                  <span class="kbd-pill text-amber-300">2</span>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">Nhầm nét nhỏ • Ôn lại sau 12h</div>
+              </button>
+
+              <button
+                type="button"
+                data-sm2-grade="3"
+                class="p-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-left transition group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold text-emerald-400">Nhớ được</span>
+                  <span class="kbd-pill text-emerald-300">3</span>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">Đọc chuẩn mặt chữ • Chu kỳ SM-2</div>
+              </button>
+
+              <button
+                type="button"
+                data-sm2-grade="4"
+                class="p-3 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-left transition group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold text-indigo-400">Khắc cốt ghi tâm</span>
+                  <span class="kbd-pill text-indigo-300">4</span>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">Nhớ cả bộ thủ & cách viết • x1.3</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT 5 COLS: HANZI WRITER 3.5 MUSCLE MEMORY & STROKE QUIZ -->
+        <div class="lg:col-span-5 p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                <span>✍️</span>
+                <span>Luyện Nhớ Cơ Bắp & Thứ Tự Nét (Hanzi Writer)</span>
+              </h3>
+              <p class="text-xs text-slate-400">
+                Tách riêng từng chữ Hán. Sai quá 3 lần sẽ báo đỏ và gợi ý nét!
+              </p>
+            </div>
+          </div>
+
+          <!-- Action Bar for Full Word -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              id="btn-writer-animate-all"
+              class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+            >
+              ▶ Viết mẫu cả từ
+            </button>
+            <button
+              type="button"
+              id="btn-writer-quiz-all"
+              class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition"
+            >
+              ✍️ Tự Viết Chữ (Ẩn nét • Phím W)
+            </button>
+            <button
+              type="button"
+              id="btn-writer-toggle-outline"
+              class="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-xs font-medium border border-slate-700 transition"
+            >
+              🚫 Khung mờ khi viết: ẨN (Khó)
+            </button>
+          </div>
+
+          <!-- Split Character Canvases Container -->
+          <div
+            id="hanzi-writer-canvases"
+            class="flex flex-wrap items-center justify-center gap-4 py-2"
+          ></div>
+
+          <div
+            id="hanzi-writer-status"
+            class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 text-center font-medium"
+          >
+            Bấm "✍️ Tự Viết Chữ" (hoặc phím W) rồi dùng chuột/trackpad vẽ trực tiếp lên ô kẻ!
+          </div>
+
+          <!-- Tone Color Legend -->
+          <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <span class="font-bold text-slate-400">Mã màu Thanh Điệu:</span>
+            <span class="tone-badge-1 px-2 py-0.5 rounded font-semibold">Thanh 1 (ā) Đỏ</span>
+            <span class="tone-badge-2 px-2 py-0.5 rounded font-semibold">Thanh 2 (á) Cam</span>
+            <span class="tone-badge-3 px-2 py-0.5 rounded font-semibold">Thanh 3 (ǎ) Lục</span>
+            <span class="tone-badge-4 px-2 py-0.5 rounded font-semibold">Thanh 4 (à) Lam</span>
+            <span class="tone-badge-5 px-2 py-0.5 rounded font-semibold">Thanh nhẹ Xám</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 2: 8 ORTHOGRAPHIC MINIGAMES + BOSS BATTLE ENGINE
+         ====================================================================== -->
+    <section id="view-games" class="hidden space-y-6">
+      <!-- Game Mode Selector + HUD -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" data-game-tab="game1" class="px-3 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-indigo-600 text-white">
+              1️⃣ Bộ Gõ IME
+            </button>
+            <button type="button" data-game-tab="game2" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              2️⃣ Phẫu Thuật (Lego)
+            </button>
+            <button type="button" data-game-tab="game3" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              3️⃣ Kẻ Mạo Danh
+            </button>
+            <button type="button" data-game-tab="game4" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              4️⃣ Rừng Chữ (Cloze)
+            </button>
+            <button type="button" data-game-tab="game5" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              5️⃣ Lưới 60s (4x4)
+            </button>
+            <button type="button" data-game-tab="game6" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              6️⃣ Bắt Âm 5s 🎧
+            </button>
+            <button type="button" data-game-tab="game7" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              7️⃣ Xạ Thủ Bộ Thủ 🔫
+            </button>
+            <button type="button" data-game-tab="game8" class="px-3 py-2 rounded-xl font-medium text-xs sm:text-sm bg-slate-800 text-slate-300">
+              8️⃣ Xếp Tàu Câu 🚂
+            </button>
+            <button type="button" data-game-tab="boss" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40">
+              🐉 Đấu Boss Cuối Bài
+            </button>
+          </div>
+
+          <div class="flex items-center gap-4 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+            <div id="game-hud-mode"></div>
+            <div class="text-xs text-slate-400">
+              Điểm: <strong id="game-hud-score" class="text-lg font-mono-code font-extrabold text-emerald-400">0</strong>
+            </div>
+            <div class="text-xs text-slate-400">
+              Combo: <strong id="game-hud-combo" class="text-lg font-mono-code font-bold text-indigo-400">x0</strong>
+            </div>
+            <div class="text-xs text-slate-400 hidden sm:block">
+              Kỷ lục Streak: <strong id="game-hud-streak" class="font-mono-code font-bold text-amber-400">0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Game Stage -->
+      <div
+        id="game-stage-container"
+        class="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 min-h-[420px] transition-all duration-300"
+      ></div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 2.5: ZERO-PINYIN MINI-DIALOGUES & READING COMPREHENSION (LESSONS 1-20)
+         ====================================================================== -->
+    <section id="view-reading" class="hidden space-y-6">
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+            <span>📜</span>
+            <span>Đọc Bài Khóa Mù Pinyin &amp; Trắc Nghiệm Đọc Hiểu (Bài 1 - Bài 20)</span>
+          </h2>
+          <p class="text-xs text-slate-400">
+            100% Chữ Hán không kèm Pinyin. <strong>Click vào bất kỳ từ nào trong hội thoại</strong> để soi bộ thủ, nghĩa và nghe phát âm!
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select
+            id="reading-lesson-select"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-950 text-indigo-300 border border-indigo-500/40 focus:outline-none"
+          ></select>
+          <button
+            type="button"
+            id="btn-reading-speak-all"
+            class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition"
+          >
+            🔊 Đọc Cả Hội Thoại
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Left 8 cols: Dialogue + Reading Quiz -->
+        <div class="lg:col-span-8 space-y-4">
+          <div id="reading-dialogue-box" class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4"></div>
+          <div id="reading-quiz-box" class="p-6 rounded-2xl bg-slate-900/90 border border-indigo-500/30 space-y-4"></div>
+        </div>
+
+        <!-- Right 4 cols: Interactive Word Inspector -->
+        <div class="lg:col-span-4 p-5 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3 sticky top-28">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-400 border-b border-slate-800 pb-2">
+            🔍 Kính Lúp Giải Phẫu Từ Vựng Trong Bài
+          </div>
+          <div id="reading-word-inspector" class="text-xs text-slate-300 space-y-3">
+            Hãy bấm vào một từ chữ Hán bất kỳ trong đoạn hội thoại bên trái để xem chiết tự bộ thủ, nghĩa Hán Việt và nghe phát âm!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 2.8: RADICAL MASTERY STUDIO (PHÒNG THÍ NGHIỆM 50+ BỘ THỦ CỐT LÕI)
+         ====================================================================== -->
+    <section id="view-radicals" class="hidden space-y-6">
+      <!-- Top Studio Sub-Navigation Bar -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+              <span>🧩</span>
+              <span>Phòng Thí Nghiệm Bộ Thủ Chữ Hán (50 Bộ Cốt Lõi &amp; 137 Bộ HSK 3)</span>
+            </h2>
+            <span id="radicals-mastery-summary" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+              Đã thuộc: 0/50 bộ
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Hiểu gốc bộ thủ = Nhớ nghĩa chữ Hán ngay lập tức mà không cần vẹt từng nét rời rạc!
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" data-rad-subtab="explorer" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition flex items-center gap-1.5">
+            <span>🔬</span>
+            <span>Bàn Mổ &amp; Tập Viết Bộ Thủ</span>
+          </button>
+          <button type="button" data-rad-subtab="flashcard" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5">
+            <span>🃏</span>
+            <span>Flashcard Lật Thẻ Bộ Thủ</span>
+          </button>
+          <button type="button" data-rad-subtab="twins" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5">
+            <span>⚖️</span>
+            <span>10 Cặp Bộ Sinh Đôi Dễ Nhầm</span>
+          </button>
+          <button type="button" data-rad-subtab="quiz" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5">
+            <span>⚡</span>
+            <span>Đấu Trường Phản Xạ Bộ Thủ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 1: EXPLORER + INSPECTOR + HANZI WRITER -->
+      <div id="rad-subview-explorer" class="space-y-4">
+        <!-- Search & Category Filter Bar -->
+        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex-1 min-w-[250px]">
+              <input
+                type="text"
+                id="rad-search-input"
+                placeholder="🔍 Tìm bộ thủ theo ký hiệu (氵, 扌, 衤...), tên Hán Việt (thủy, thủ, ngôn...), nghĩa (nước, tay, quần áo...) hoặc chữ Hán..."
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:outline-none text-sm text-white"
+              />
+            </div>
+            <span id="rad-explorer-count" class="text-xs font-extrabold text-indigo-400 font-mono-code">50 bộ thủ</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" data-rad-cat="all" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 transition">
+              📚 Tất cả 50 Bộ Cốt Lõi
+            </button>
+            <button type="button" data-rad-cat="human" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              👤 Con Người &amp; Cơ Thể
+            </button>
+            <button type="button" data-rad-cat="action" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              ⚡ Hành Động &amp; Di Chuyển
+            </button>
+            <button type="button" data-rad-cat="mind_speech" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              💬 Ngôn Ngữ &amp; Tâm Lý
+            </button>
+            <button type="button" data-rad-cat="nature" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              🌿 Thiên Nhiên &amp; Nguyên Tố
+            </button>
+            <button type="button" data-rad-cat="objects_places" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              🏠 Đồ Vật &amp; Đời Sống
+            </button>
+            <button type="button" data-rad-cat="confusable" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              ⚠️ Có Bẫy Dễ Nhầm
+            </button>
+            <button type="button" data-rad-cat="full137" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              🌐 Toàn bộ 137 Bộ HSK 3
+            </button>
+          </div>
+        </div>
+
+        <!-- 12-Col Layout: Left 7 Cols Grid, Right 5 Cols Sticky Deep-Dive Inspector -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div id="rad-explorer-grid" class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+          <div id="rad-inspector-panel" class="lg:col-span-5 p-5 rounded-2xl bg-slate-900/95 border border-indigo-500/30 sticky top-28"></div>
+        </div>
+      </div>
+
+      <!-- SUB-VIEW 2: RADICAL 3D FLASHCARDS -->
+      <div id="rad-subview-flashcard" class="hidden"></div>
+
+      <!-- SUB-VIEW 3: 10 CONFUSABLE TWIN RADICAL PAIRS -->
+      <div id="rad-subview-twins" class="hidden"></div>
+
+      <!-- SUB-VIEW 4: RADICAL INTERACTIVE QUIZ -->
+      <div id="rad-subview-quiz" class="hidden"></div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 3: VOCABULARY & RADICAL DECOMPOSITION EXPLORER (LESSONS 1-20)
+         ====================================================================== -->
+    <section id="view-vocab" class="hidden space-y-5">
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex-1 min-w-[260px]">
+          <input
+            type="text"
+            id="vocab-search-input"
+            placeholder="🔍 Tìm kiếm theo Chữ Hán, Nghĩa tiếng Việt, Hán Việt, Bộ thủ hoặc Mẹo nhớ..."
+            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:outline-none text-sm text-white"
+          />
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="vocab-explorer-count" class="text-xs font-bold text-indigo-400 font-mono-code">0 từ vựng</span>
+          <span class="text-xs text-slate-400 hidden sm:inline">
+            (Mặc định ẩn Pinyin: Giữ chuột vào ô 🔒 để xem Pinyin)
+          </span>
+        </div>
+      </div>
+
+      <div id="vocab-explorer-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 4: QA & ANALYTICS DASHBOARD (WEAKNESS DIAGNOSTICS)
+         ====================================================================== -->
+    <section id="view-analytics" class="hidden space-y-6">
+      <!-- Campaign Banner -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-rose-950/80 border border-indigo-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30">
+            🚨 Chẩn Đoán Điểm Yếu Nhận Thức (Orthographic Diagnostics)
+          </div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-white">
+            Chiến Dịch Đặc Trị "Tội Phạm Mặt Chữ" (Targeted Drill)
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Lọc riêng những từ bạn hay chọn nhầm bộ thủ hoặc phải bấm <kbd class="kbd-pill">H</kbd> xem trộm Pinyin để ép não vượt qua chuỗi thử thách: <strong>Game 1 (Bộ Gõ Pinyin) → Game 2 (Phẫu Thuật Chữ Hán)</strong> cho đến khi xóa sạch lỗi!
+          </p>
+        </div>
+
+        <button
+          type="button"
+          data-action="start-targeted-drill"
+          class="px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm shadow-xl shadow-rose-600/30 transition whitespace-nowrap"
+        >
+          🔥 Bắt Đầu Chiến Dịch Đặc Trị Ngay →
+        </button>
+      </div>
+
+      <!-- Heatmap Bài 1 - Bài 20 -->
+      <div class="space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+            <span>🗺️ Heatmap Mức Độ Thuộc Mặt Chữ &amp; Vương Miện Boss (Bài 1 - Bài 20)</span>
+            <span id="analytics-crowns-badge" class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-extrabold border border-amber-500/40">👑 0/20 Boss</span>
+          </h3>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1 text-emerald-400">● Xanh (&gt;80% thuộc mặt chữ)</span>
+            <span class="flex items-center gap-1 text-amber-400">● Cam (Đang luyện)</span>
+            <span class="flex items-center gap-1 text-rose-400">● Đỏ (Còn từ mù chữ/hay nhầm)</span>
+          </div>
+        </div>
+
+        <div id="analytics-heatmap-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <!-- Top Confused Characters ("Tội Phạm Mặt Chữ") -->
+      <div class="space-y-3">
+        <h3 class="text-base font-extrabold text-white">
+          🕵️ Danh Sách "Tội Phạm Mặt Chữ" (Top Confused &amp; Pinyin-Peeked Characters)
+        </h3>
+        <div id="analytics-criminals-list" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       MODAL: DATA CRAWLER / IMPORTER / JSON MANAGER
+       ======================================================================== -->
+  <div
+    id="modal-data-manager"
+    class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-extrabold text-white">📥 Quản Lý &amp; Nhập Dữ Liệu (Data Crawler / Importer)</h3>
+          <p class="text-xs text-slate-400">
+            Hỗ trợ Import/Export JSON chuẩn Schema hoặc Paste danh sách từ vựng thô để tự động parse vào localStorage
+          </p>
+        </div>
+        <button
+          type="button"
+          id="btn-close-data-modal"
+          class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+        >
+          ✕ Đóng
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-xs text-slate-300">
+          <strong>Cách 1 (Paste từ vựng thô):</strong> Mỗi từ 1 dòng theo mẫu:
+          <code class="px-1.5 py-0.5 rounded bg-slate-950 text-emerald-300 font-mono-code">Chữ Hán | Pinyin | Hán Việt | Nghĩa tiếng Việt | Số bài</code>
+          <br />
+          <strong>Cách 2 (JSON):</strong> Dán mảng JSON từ vựng hoặc bản sao lưu tiến độ học tập.
+        </div>
+
+        <textarea
+          id="data-manager-textarea"
+          rows="9"
+          placeholder="Ví dụ paste nhanh:&#10;打扫 | dǎsǎo | đả tảo | quét dọn | 14&#10;复习 | fùxí | phục tập | ôn tập | 1"
+          class="w-full p-3.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:outline-none font-mono-code text-xs text-slate-200"
+        ></textarea>
+
+        <div id="data-manager-status" class="text-xs min-h-[1.25rem]"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="btn-data-import"
+            class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition"
+          >
+            ⚡ Tự Động Parse &amp; Lưu vào LocalStorage
+          </button>
+          <button
+            type="button"
+            id="btn-data-export"
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition"
+          >
+            📤 Xuất JSON Backup
+          </button>
+        </div>
+
+        <button
+          type="button"
+          id="btn-data-reset"
+          class="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold transition"
+        >
+          🗑️ Reset Tiến Độ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODULAR JAVASCRIPT ENGINE SCRIPTS
+       ======================================================================== -->
+  <script src="data/hsk3_vocab.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/writer.js"></script>
+  <script src="js/radicals.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
