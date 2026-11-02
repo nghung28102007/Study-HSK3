@@ -144,7 +144,7 @@
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1.5"
           >
             <span>🧩</span>
-            <span>Học Bộ Thủ (50+ Bộ)</span>
+            <span>Học Bộ Thủ (Đủ 214 Bộ)</span>
           </button>
           <button
             type="button"
@@ -532,7 +532,7 @@
     </section>
 
     <!-- ======================================================================
-         VIEW 2.8: RADICAL MASTERY STUDIO (PHÒNG THÍ NGHIỆM 50+ BỘ THỦ CỐT LÕI)
+         VIEW 2.8: RADICAL MASTERY STUDIO (PHÒNG THÍ NGHIỆM TRỌN BỘ 214 BỘ THỦ KHANG HY)
          ====================================================================== -->
     <section id="view-radicals" class="hidden space-y-6">
       <!-- Top Studio Sub-Navigation Bar -->
@@ -541,21 +541,21 @@
           <div class="flex items-center gap-2 flex-wrap">
             <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
               <span>🧩</span>
-              <span>Phòng Thí Nghiệm Bộ Thủ Chữ Hán (50 Bộ Cốt Lõi &amp; 137 Bộ HSK 3)</span>
+              <span>Phòng Thí Nghiệm Bộ Thủ Chữ Hán (Trọn Bộ 214 Bộ Thủ Khang Hy #1 - #214)</span>
             </h2>
             <span id="radicals-mastery-summary" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-              Đã thuộc: 0/50 bộ
+              Đã thuộc: 0/50 bộ cốt lõi • 0/214 bộ Khang Hy
             </span>
           </div>
           <p class="text-xs text-slate-400 mt-0.5">
-            Hiểu gốc bộ thủ = Nhớ nghĩa chữ Hán ngay lập tức mà không cần vẹt từng nét rời rạc!
+            Đầy đủ 100% <strong>214 Bộ Thủ Khang Hy chuẩn (từ 1 nét đến 17 nét)</strong> kèm 50 bộ cốt lõi biến thể &amp; 137 bộ chiết tự HSK 3!
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
           <button type="button" data-rad-subtab="explorer" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition flex items-center gap-1.5">
             <span>🔬</span>
-            <span>Bàn Mổ &amp; Tập Viết Bộ Thủ</span>
+            <span>Bàn Mổ &amp; Tập Viết 214 Bộ</span>
           </button>
           <button type="button" data-rad-subtab="flashcard" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5">
             <span>🃏</span>
@@ -577,20 +577,43 @@
         <!-- Search & Category Filter Bar -->
         <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex-1 min-w-[250px]">
+            <div class="flex-1 min-w-[240px]">
               <input
                 type="text"
                 id="rad-search-input"
-                placeholder="🔍 Tìm bộ thủ theo ký hiệu (氵, 扌, 衤...), tên Hán Việt (thủy, thủ, ngôn...), nghĩa (nước, tay, quần áo...) hoặc chữ Hán..."
+                placeholder="🔍 Tìm kiếm theo số thứ tự (#1 - #214), ký hiệu (氵, 扌, 龠...), Hán Việt (nhất, thủy, dược...), nghĩa hoặc chữ Hán..."
                 class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:outline-none text-sm text-white"
               />
             </div>
-            <span id="rad-explorer-count" class="text-xs font-extrabold text-indigo-400 font-mono-code">50 bộ thủ</span>
+
+            <div class="flex items-center gap-2.5">
+              <select
+                id="rad-stroke-filter"
+                class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-950 text-amber-300 border border-amber-500/40 focus:outline-none"
+                title="Lọc bộ thủ theo số nét"
+              >
+                <option value="0">✍️ Tất cả số nét (1 - 17 nét)</option>
+                <option value="1">1 nét (Bộ #1 - #6)</option>
+                <option value="2">2 nét (Bộ #7 - #29)</option>
+                <option value="3">3 nét (Bộ #30 - #60)</option>
+                <option value="4">4 nét (Bộ #61 - #94)</option>
+                <option value="5">5 nét (Bộ #95 - #117)</option>
+                <option value="6">6 nét (Bộ #118 - #146)</option>
+                <option value="7">7 nét (Bộ #147 - #166)</option>
+                <option value="8">8 nét (Bộ #167 - #175)</option>
+                <option value="9">9 nét (Bộ #176 - #186)</option>
+                <option value="100">10 - 17 nét (Bộ #187 - #214)</option>
+              </select>
+              <span id="rad-explorer-count" class="text-xs font-extrabold text-indigo-400 font-mono-code whitespace-nowrap">214 bộ thủ</span>
+            </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5">
-            <button type="button" data-rad-cat="all" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 transition">
-              📚 Tất cả 50 Bộ Cốt Lõi
+            <button type="button" data-rad-cat="kangxi214" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 transition">
+              👑 Trọn bộ 214 Bộ Thủ Khang Hy (#1 - #214)
+            </button>
+            <button type="button" data-rad-cat="all" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              📚 50 Bộ Cốt Lõi HSK (Kèm Biến Thể)
             </button>
             <button type="button" data-rad-cat="human" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
               👤 Con Người &amp; Cơ Thể
@@ -611,7 +634,7 @@
               ⚠️ Có Bẫy Dễ Nhầm
             </button>
             <button type="button" data-rad-cat="full137" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-              🌐 Toàn bộ 137 Bộ HSK 3
+              🌐 137 Bộ Chiết Tự HSK 3
             </button>
           </div>
         </div>

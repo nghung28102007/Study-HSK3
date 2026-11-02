@@ -9,7 +9,8 @@
 
 window.HSKRadicals = (function () {
   let activeSubTab = 'explorer'; // 'explorer' | 'flashcard' | 'twins' | 'quiz'
-  let currentCategory = 'all';   // 'all' | 'human' | 'action' | 'mind_speech' | 'nature' | 'objects_places' | 'confusable' | 'full137'
+  let currentCategory = 'kangxi214'; // 'kangxi214' | 'all' | 'human' | 'action' | 'mind_speech' | 'nature' | 'objects_places' | 'confusable' | 'full137'
+  let currentStrokeFilter = 0;   // 0 = all strokes, 1..17 = specific stroke count, 100 = 10+ strokes
   let searchQuery = '';
   let selectedRadicalKey = '氵';
   let activeWriterInstance = null;
@@ -19,9 +20,11 @@ window.HSKRadicals = (function () {
   let fcIndex = 0;
   let fcFlipped = false;
   let fcOnlyUnmastered = false;
+  let fcDeckMode = 'core'; // 'core' (50 bộ cốt lõi) | 'kangxi214' (214 bộ Khang Hy)
 
   // Quiz state
   let quizMode = 'mixed'; // 'mixed' | 'meaning' | 'char_to_rad' | 'twin_trap'
+  let quizPoolMode = 'core'; // 'core' | 'kangxi214'
   let quizScore = 0;
   let quizCombo = 0;
   let quizQuestion = null;
@@ -1253,8 +1256,251 @@ window.HSKRadicals = (function () {
     }
   ];
 
+  // ============================================================================
+  // COMPLETE 214 KANGXI RADICALS (TRỌN BỘ 214 BỘ THỦ KHANG HY CHUẨN #1 - #214)
+  // Format: [kangxiId, radical, variants, pinyin, hanViet, strokes, meaning, sampleCharsCSV, mnemonic]
+  // ============================================================================
+  const KANGXI_214_RAW = [
+    // --- 1 NÉT (#1 - #6) ---
+    [1, '一', '', 'yī', 'nhất', 1, 'Số một, thứ nhất, sự khởi đầu, ngang bằng', '一,三,上,下,万,丈', 'Một nét gạch ngang duy nhất biểu thị số 1 hoặc đường chân trời.'],
+    [2, '丨', '', 'gǔn', 'cổn', 1, 'Nét sổ thẳng từ trên xuống, xuyên suốt', '中,串,丰,书', 'Một nét sổ dọc đâm xuyên qua tâm chữ Trung (中 - ở giữa).'],
+    [3, '丶', '', 'zhǔ', 'chủ', 1, 'Điểm chấm, ngọn đèn bấc lửa', '主,太,头,为,永', 'Chấm lửa trên ngọn đèn dầu tạo thành chữ Chủ (主).'],
+    [4, '丿', '', 'piě', 'phiệt', 1, 'Nét phẩy nghiêng từ phải sang trái', '久,么,之,乎,乘,年', 'Nét phẩy mềm mại vuốt nghiêng sang trái.'],
+    [5, '乙', '乚,乛', 'yǐ', 'ất', 1, 'Can Ất, vị trí thứ hai, mầm cây uốn cong vươn lên', '乙,九,也,习,买,乱,乳', 'Nét uốn cong mềm dẻo như mầm cây vươn lên mặt đất.'],
+    [6, '亅', '', 'jué', 'quyết', 1, 'Nét sổ có móc câu ở đáy', '了,才,事,求,争,予', 'Nét sổ thẳng có chiếc móc câu ngược ở dưới đáy (như chữ 了).'],
+    // --- 2 NÉT (#7 - #29) ---
+    [7, '二', '', 'èr', 'nhị', 2, 'Số hai, đôi, trời và đất song hành', '二,五,云,些,互,井', 'Hai nét gạch ngang song song biểu thị số 2 (trời trên, đất dưới).'],
+    [8, '亠', '', 'tóu', 'đầu', 2, 'Phần đầu, mái đậy phía trên chữ', '亡,交,京,亲,亮,高,享', 'Một chấm trên một nét ngang như cái nắp đậy trên đỉnh chữ (京, 亮, 高).'],
+    [9, '人', '亻,𠆢', 'rén', 'nhân', 2, 'Con người, nhân loại, đại từ và hành vi con người', '人,他,你,们,休,体,信,作,住,借', 'Hình người đứng thẳng (人) hoặc đứng nghiêng bên trái chữ (亻).'],
+    [10, '儿', '', 'ér', 'nhi', 2, 'Đứa trẻ, con trai, đôi chân người phía dưới chữ', '儿,先,元,光,兄,免,克,允', 'Đôi chân người nâng đỡ phía dưới chữ Tiên (先), Quang (光), Nguyên (元).'],
+    [11, '入', '', 'rù', 'nhập', 2, 'Đi vào, thu nhập, thâm nhập', '入,全,内,两', 'Nét mác phải đè lên nét phẩy trái như bước chân đi vào trong.'],
+    [12, '八', '丷', 'bā', 'bát', 2, 'Số tám, phân chia, tách rời sang hai bên', '八,公,六,共,关,兴,兵,典', 'Hai nét phẩy mác tách rời nhau biểu thị sự chia tách và số 8.'],
+    [13, '冂', '', 'jiōng', 'quynh', 2, 'Vùng biên giới xa, khung bao ba phía (trống đáy)', '同,网,周,用,冈,内', 'Khung vây ba mặt trên-trái-phải như tấm lưới (网) hoặc chữ Đồng (同).'],
+    [14, '冖', '', 'mì', 'mịch', 2, 'Khăn trùm lên trên, che đậy', '写,军,冠,农,冤', 'Mái khăn trùm không có chấm trên đầu: Viết (写), Quân đội (军), Quán quân (冠).'],
+    [15, '冫', '', 'bīng', 'băng', 2, 'Nước đá, băng giá, lạnh lẽo, mùa đông, quyết đoán', '冰,冷,冬,净,决,准,凉,冻', 'Hai giọt nước đông cứng thành băng giá mùa đông (冷 lạnh, 冰 băng, 冬 đông).'],
+    [16, '几', '', 'jī', 'kỷ', 2, 'Cái bàn trà nhỏ, ghế đôn, mấy/bao nhiêu', '几,风,机,朵,凭,凡', 'Hình chiếc bàn nhỏ có hai chân cong: Mấy (几个), Bàn (茶几), Cơn gió (风).'],
+    [17, '凵', '', 'kǎn', 'khảm', 2, 'Hố sâu, cái hộp há miệng hứng phía trên', '凶,出,画,函,击', 'Hình cái hố sâu mở miệng lên trên như khung dưới chữ Xuất (出), Họa (画).'],
+    [18, '刀', '刂,⺈', 'dāo', 'đao', 2, 'Con dao, vũ khí sắc bén, cắt, chia, khắc, chải', '刀,分,切,别,到,刻,刷,刮,利', 'Hình con dao (刀) hoặc lưỡi dao dựng đứng bên phải chữ (刂: 到, 刻, 刷).'],
+    [19, '力', '', 'lì', 'lực', 2, 'Sức mạnh cơ bắp, nỗ lực, vận động, giải quyết', '力,办,加,动,努,勇,劳,助', 'Hình cánh tay gồng cơ bắp: Nỗ lực (努力), Vận động (运动), Cách làm (办法).'],
+    [20, '勹', '', 'bāo', 'bao', 2, 'Bao bọc, gói ghém, ôm vào lòng', '包,勺,句,勿,匆,匀', 'Hình dáng người cúi xuống vòng tay ôm gói đồ vật (包 cái túi/bánh bao, 勺 cái thìa).'],
+    [21, '匕', '', 'bǐ', 'chủy', 2, 'Cái thìa/muỗng, dao găm ngắn, biến đổi', '匕,北,比,化,匙,疑', 'Hình chiếc thìa múc canh (钥匙 chìa khóa/thìa) hoặc người xoay lưng (北 Bắc, 化 Hóa).'],
+    [22, '匚', '', 'fāng', 'phương', 2, 'Cái tủ, hộp vuông mở nắp bên phải', '医,区,匹,巨,匠,匪', 'Hình chiếc hộp đựng đồ mở bên phải như hộp dụng cụ y tế (医 bác sĩ/y viện).'],
+    [23, '匸', '', 'xì', 'hệ', 2, 'Che giấu, cất giấu kín đáo (nhập chung với 匚 trong giản thể)', '区,匹,医,匿', 'Khung che đậy vật được cất giấu bên trong (khu vực 区, ẩn nấp 匿).'],
+    [24, '十', '', 'shí', 'thập', 2, 'Số mười, chữ thập, bốn phương tám hướng, đầy đủ', '十,千,午,半,华,南,协,博', 'Nét ngang (Đông-Tây) giao nét sổ (Bắc-Nam) tạo thành số 10 trọn vẹn.'],
+    [25, '卜', '⺊', 'bǔ', 'bốc', 2, 'Xem bói, vết nứt trên mai rùa khi bói toán', '卜,占,卡,卢,卧,外,处', 'Vết nứt dọc ngang trên mai rùa nướng lửa khi xem bói thời cổ (占 chiếm/bói, 外 ngoài).'],
+    [26, '卩', '㔾', 'jié', 'tiết', 2, 'Đốt tre làm ấn tín, người quỳ gối tuân lệnh', '卫,印,危,即,却,卷,卵', 'Hình nửa con dấu bằng đốt tre hoặc người đang quỳ gối (危 nguy hiểm, 印 con dấu).'],
+    [27, '厂', '', 'hàn', 'hán', 2, 'Sườn núi đá nhô ra, nhà xưởng rộng', '厂,历,厅,压,厚,原,厨,厌', 'Vách đá nhô ra tạo chỗ trú: Lịch sử (历史), Phòng khách (客厅), Nhà bếp (厨房).'],
+    [28, '厶', '', 'sī', 'khổ / tư', 2, 'Riêng tư, cá nhân, cuộn tơ cánh tay', '去,参,台,云,私,县', 'Hình vòng khép kín chỉ sự riêng tư (私) hoặc tham gia (参加).'],
+    [29, '又', '', 'yòu', 'hựu', 2, 'Bàn tay phải, lại nữa, lặp lại hành động', '又,友,双,发,取,受,叔,欢', 'Hình bàn tay phải: Hai tay nắm nhau thành Bạn bè (友), hai tay cùng cầm là Đôi (双).'],
+    // --- 3 NÉT (#30 - #60) ---
+    [30, '口', '', 'kǒu', 'khẩu', 3, 'Cái miệng, ăn uống, ca hát, khóc, gọi, hỏi', '口,吃,喝,唱,哭,叫,问,号,嘴', 'Hình cái miệng đang mở để ăn (吃), uống (喝), hát (唱), khóc (哭), hỏi (问).'],
+    [31, '囗', '', 'wéi', 'vi', 3, 'Tường thành bao vây bốn phía, biên giới quốc gia, khu vườn', '国,园,图,回,因,困,圈,固', 'Khung vuông lớn bao trọn bên ngoài chữ: Quốc gia (国家), Công viên (公园), Bản đồ (地图).'],
+    [32, '土', '', 'tǔ', 'thổ', 3, 'Đất đai, bùn đất, địa điểm, công trình xây dựng', '土,地,在,坐,城,坏,块,场,墙', 'Mầm cây mọc lên từ hai tầng đất: Mặt đất (地), Thành phố (城), Quảng trường (场).'],
+    [33, '士', '', 'shì', 'sĩ', 3, 'Học trò, kẻ sĩ, người có học thức, chiến sĩ, âm thanh', '士,声,壮,处,壶,吉,壳', 'Nét ngang trên dài hơn nét ngang dưới (ngược với 土): Âm thanh (声音), Cường tráng (壮).'],
+    [34, '夂', '', 'zhǐ', 'truy', 3, 'Bước chân theo sau từ phía sau', '冬,处,备,复,夏,各', 'Hình bàn chân bước chậm rãi theo sau: Mùa đông (冬), Chuẩn bị (备), Ôn tập (复).'],
+    [35, '夊', '', 'suī', 'tuy', 3, 'Bước đi chậm chạp, kéo lê chân', '夏,复,爱,凌,俊', 'Hình bàn chân bước đi thong thả dưới chữ Mùa hè (夏), Yêu thương (爱).'],
+    [36, '夕', '', 'xī', 'tịch', 3, 'Buổi chiều tà, ban đêm, trăng khuyết, nhiều', '夕,外,多,夜,够,梦', 'Hình vầng trăng khuyết lúc hoàng hôn: Ban đêm (夜), Giấc mơ (梦), Nhiều (多).'],
+    [37, '大', '', 'dà', 'đại', 3, 'To lớn, vĩ đại, người trưởng thành dang rộng tay chân', '大,太,天,夫,头,奇,奖,套', 'Hình người đứng dang rộng hai tay hai chân: To lớn (大), Bầu trời (天), Kỳ lạ (奇).'],
+    [38, '女', '', 'nǚ', 'nữ', 3, 'Phụ nữ, con gái, thành viên nữ trong gia đình, hôn nhân', '女,好,妈,姐,妹,奶,姨,婚,姑', 'Hình người phụ nữ đoan trang: Mẹ (妈), Chị (姐), Em gái (妹), Bà (奶), Kết hôn (婚).'],
+    [39, '子', '孑,孒', 'zǐ', 'tử', 3, 'Con cái, đứa trẻ, hạt giống, hậu tố danh từ đồ vật', '子,字,学,孩,季,孙,孝,孤', 'Hình em bé giơ hai tay: Đứa trẻ (孩子), Học tập (学习), Chữ viết (汉字), Mùa (季节).'],
+    [40, '宀', '', 'mián', 'miên', 3, 'Mái nhà có tường che kín hai bên, gia đình, phòng ốc, yên tĩnh', '家,室,安,完,客,定,宝,宾,宿', 'Hình mái nhà có ống khói và hai tường bao: Gia đình (家), Phòng học (教室), Yên tĩnh (安静).'],
+    [41, '寸', '', 'cùn', 'thốn', 3, 'Đơn vị đo (1 tấc), phép tắc, bàn tay bắt mạch', '寸,对,导,封,射,尊,将,寻', 'Bàn tay có dấu chấm chỉ vị trí huyệt mạch ở cổ tay: Đúng/Đối (对), Tôn trọng (尊).'],
+    [42, '小', '⺌,⺍', 'xiǎo', 'tiểu', 3, 'Nhỏ bé, ít ỏi, hạt cát nhỏ', '小,少,尖,尘,尚,尝,光,常', 'Ba hạt nhỏ tách rời: Trên nhỏ (小) dưới lớn (大) là Nhọn (尖); Nhỏ (小) + đất (土) là Bụi (尘).'],
+    [43, '尢', '尣,尤', 'wāng', 'uông', 3, 'Người đi khập khiễng, cong chân, đặc biệt', '尤,就,尴,尬', 'Hình người có một chân bước lệch: Đặc biệt (尤其), Ngay lập tức/Thì (就).'],
+    [44, '尸', '', 'shī', 'thi', 3, 'Cơ thể người nằm/ngồi, mái tầng nhà, cái đuôi, thước đo', '尺,尽,尾,局,居,屋,层,展', 'Hình người ngồi hoặc mái nhà nhiều tầng: Tầng lầu (层), Cư trú (居), Căn phòng (屋).'],
+    [45, '屮', '', 'chè', 'triệt', 3, 'Mầm cỏ mới nhú lên khỏi mặt đất', '出,屯,逆,茁', 'Hình mầm non vừa đâm chồi có hai nhánh lá hai bên.'],
+    [46, '山', '', 'shān', 'sơn', 3, 'Núi non, đỉnh núi, hòn đảo, bờ biển', '山,岁,岛,岸,峰,崇,岩,峡', 'Hình 3 đỉnh núi nhấp nhô: Núi (山), Tuổi (岁), Hòn đảo (岛), Bờ biển (岸).'],
+    [47, '巛', '川', 'chuān', 'xuyên', 3, 'Sông ngòi, dòng nước chảy cuồn cuộn', '川,州,巡,顺,巢', 'Hình 3 dòng nước sông uốn lượn chảy song song: Dòng sông (川), Thuận lợi (顺).'],
+    [48, '工', '', 'gōng', 'công', 3, 'Công việc, người thợ, thước đo chữ T, khéo léo, bên trái', '工,左,巧,差,巨,贡,项', 'Hình chiếc thước thợ xây chữ T: Công việc (工作), Bên trái (左边), Kém/Thiếu (差).'],
+    [49, '己', '已,巳', 'jǐ', 'kỷ', 3, 'Bản thân mình, tự mình; phân biệt với Dĩ (已) và Tỵ (巳)', '己,已,巳,记,起,改,包,导', 'Kỷ (己 - tự mình) mở miệng; Dĩ (已 - đã) hé nửa miệng; Tỵ (巳) đóng kín miệng.'],
+    [50, '巾', '', 'jīn', 'cân', 3, 'Khăn vải, mũ, rèm, cờ, chợ búa, giúp đỡ', '巾,帽,帮,带,市,师,布,帐,席', 'Hình chiếc khăn vải treo rủ xuống: Cái mũ (帽子), Giúp đỡ (帮忙), Mang theo (带).'],
+    [51, '干', '', 'gān', 'can', 3, 'Khô ráo, sạch sẽ, làm việc, năm tháng, bình an', '干,平,年,并,幸,岸,汗', 'Hình chạc cây phòng vệ: Sạch sẽ (干净), Năm (年), Bình an (平), Hạnh phúc (幸福).'],
+    [52, '幺', '乡', 'yāo', 'yêu', 3, 'Nhỏ nhắn, sợi tơ mảnh nhỏ mới se', '幺,幼,乡,幻,幽,几', 'Hình cuộn tơ cực nhỏ mới kéo ra từ kén tằm: Nhỏ tuổi (幼), Quê hương (乡).'],
+    [53, '广', '', 'guǎng', 'nghiễm', 3, 'Mái nhà rộng mở bên sườn núi, cửa hàng, giường, sức khỏe', '广,店,床,座,庭,度,康,应,厨', 'Mái hiên rộng mở bên phải: Cửa hàng (商店), Giường (床), Chỗ ngồi (座位), Khỏe mạnh (健康).'],
+    [54, '廴', '', 'yǐn', 'dẫn', 3, 'Bước đi dài, kéo dài hành trình, xây dựng', '建,延,廷', 'Bước đi vươn dài (không có chấm trên như 辶): Xây dựng (建设), Kéo dài (延).'],
+    [55, '廾', '', 'gǒng', 'củng', 3, 'Hai bàn tay chắp lại dâng vật lên', '开,弄,异,弃,弊', 'Hình hai bàn tay cùng giơ lên mở cửa (开) hoặc làm/chơi (弄).'],
+    [56, '弋', '', 'yì', 'dặc', 3, 'Cọc gỗ buộc dây bắn tên, quy tắc mẫu mực', '式,代,武,贰', 'Hình chiếc cọc đóng xuống đất làm chuẩn mực: Hình thức/Kiểu (正式, 方式), Thời đại (代).'],
+    [57, '弓', '', 'gōng', 'cung', 3, 'Cây cung bắn tên, uốn cong, co giãn, anh em', '弓,张,引,弟,弱,强,弹,弯', 'Hình cánh cung uốn cong: Mở/Tờ (张), Em trai (弟弟), Mạnh mẽ (强), Yếu (弱).'],
+    [58, '彐', '彑,⺕', 'jì', 'kệ', 3, 'Đầu nhím, bàn tay cầm chổi quét, ghi chép', '归,当,录,雪,扫,妇,寻', 'Hình bàn tay cầm chổi trong chữ Quét dọn (打扫), Tuyết (雪), Ghi chép (记录).'],
+    [59, '彡', '', 'shān', 'sam', 3, 'Lông dài, tóc dài, nét vẽ trang trí, bóng hình, màu sắc', '影,彩,形,须,衫,彦,彭', 'Ba nét phẩy song song như vệt sáng tối hoặc họa tiết: Điện ảnh/Bóng (电影), Màu sắc (色彩).'],
+    [60, '彳', '', 'chì', 'xích', 3, 'Bước chân trái, đi lại trên đường phố, hành trình', '很,得,行,往,待,街,律,彻', 'Hai nét phẩy trên + một nét sổ dọc như bước chân đi trên phố (街道, 银行, 很).'],
+    // --- 4 NÉT (#61 - #94) ---
+    [61, '心', '忄,⺗', 'xīn', 'tâm', 4, 'Trái tim, tâm trạng, cảm xúc, suy nghĩ, trí nhớ, lo lắng', '心,想,忘,忙,快,慢,懂,怕,急,情', 'Trái tim (心) ở dưới cho suy nghĩ (想, 忘); Tâm đứng (忄) ở trái cho cảm xúc (忙, 快, 慢, 懂).'],
+    [62, '戈', '', 'gē', 'qua', 4, 'Cây thương/kích cổ đại, chiến tranh, bảo vệ, tôi/thành công', '戈,我,战,成,或,戏,戒,划', 'Hình vũ khí mũi giáo cổ đại: Tôi (我), Hoàn thành (完成), Trò chơi/Kịch (游戏).'],
+    [63, '户', '戶,戸', 'hù', 'hộ', 4, 'Cánh cửa đơn, hộ gia đình, căn phòng, nơi chốn', '户,房,所,扇,扁,护', 'Hình một cánh cửa gỗ có bản lề: Căn phòng (房间), Nơi chốn/Cho nên (所以), Bảo vệ (保护).'],
+    [64, '手', '扌,龵', 'shǒu', 'thủ', 4, 'Bàn tay, cầm, nắm, đánh, quét, đẩy, đổi, chuyển, đón', '手,拿,打,扫,把,拉,推,换,搬,接', 'Bàn tay 5 ngón (手: 拿 cầm) hoặc Tài gảy (扌) bên trái cho mọi động tác của tay (打扫, 搬, 换).'],
+    [65, '支', '', 'zhī', 'chi', 4, 'Cành cây, chi nhánh, nâng đỡ, kỹ thuật', '支,技,枝,鼓,翅', 'Hình bàn tay (又) cầm một cành tre (十): Ủng hộ/Chi nhánh (支持), Kỹ thuật (技).'],
+    [66, '攴', '攵', 'pū', 'phộc', 4, 'Bàn tay cầm gậy gõ nhẹ, dạy học, buông thả, câu chuyện, sửa đổi', '教,放,故,改,敢,数,政,效,救', 'Tay cầm thước gõ nhịp dạy học (教), đặt/thả (放), chuyện cũ (故事), toán học (数学).'],
+    [67, '文', '', 'wén', 'văn', 4, 'Văn chương, chữ viết, văn hóa, hoa văn', '文,齐,斋,斑,斐', 'Hình các nét hoa văn giao nhau: Văn hóa (文化), Tiếng Trung (中文).'],
+    [68, '斗', '', 'dǒu', 'đẩu', 4, 'Cái đấu đong thóc gạo, gáo múc nước, khoa học, nguyên liệu', '斗,料,斜,科,斟', 'Hình chiếc gáo có cán dài dùng để đong: Đồ uống/Nguyên liệu (饮料), Khoa học (科学).'],
+    [69, '斤', '', 'jīn', 'cân', 4, 'Cái rìu chặt gỗ, đơn vị cân (0.5 kg), mới mẻ, gần gũi', '斤,新,近,所,断,斯,欣', 'Hình lưỡi rìu sắc bén: Dùng rìu (斤) đẽo cây (木) làm đồ Mới (新), Gần (近).'],
+    [70, '方', '', 'fāng', 'phương', 4, 'Hình vuông, phương hướng, địa phương, du lịch, bên cạnh', '方,放,旁,旅,族,旗,施', 'Hình lá cờ chỉ hướng: Phương hướng/Nơi (地方), Du lịch (旅游), Bên cạnh (旁边), Thuận tiện (方便).'],
+    [71, '无', '旡', 'wú', 'vô', 4, 'Không có, hư vô, đã rồi', '无,既,抚', 'Không có (无论 bất luận, 既然 đã... thì...).'],
+    [72, '日', '', 'rì', 'nhật', 4, 'Mặt trời, ánh nắng, ban ngày, thời gian, mùa xuân', '日,明,晴,早,晚,晒,春,昨,时,星', 'Hình mặt trời có 1 nét ngang giữa: Trời nắng (晴), Sáng mai (明天), Sớm (早), Phơi nắng (晒).'],
+    [73, '曰', '', 'yuē', 'viết', 4, 'Nói rằng, thốt lời (khung rộng và thấp hơn chữ Nhật 日)', '曰,曲,更,曾,最,替', 'Hình cái miệng có làn hơi bay ra khi nói: Hơn nữa (更), Nhất (最), Bài hát/Cong (曲).'],
+    [74, '月', '⺼', 'yuè', 'nguyệt', 4, 'Mặt trăng, tháng năm (kiêm Bộ Nhục 肉 chỉ các bộ phận cơ thể)', '月,明,期,朋,腿,脚,胖,脸,肚,服', 'Vầng trăng khuyết (月亮, 星期) hoặc cơ thịt trên cơ thể người (腿 đùi, 脚 chân, 脸 mặt, 胖 béo).'],
+    [75, '木', '', 'mù', 'mộc', 4, 'Cây cối, gỗ, rừng rậm, bàn ghế, trường học, kiểm tra', '木,树,林,森,桌,椅,楼,校,果,查', 'Hình cây có cành và rễ: Cây (树), Bàn ghế (桌椅), Tầng lầu (楼), Trường (校), Kiểm tra (检查).'],
+    [76, '欠', '', 'qiàn', 'khiếm', 4, 'Há miệng ngáp, thổi hơi, thiếu nợ, vui vẻ ca hát', '欠,欢,歌,次,吹,欺,歉,饮', 'Hình người há miệng thở hơi: Thích/Hoan nghênh (喜欢/欢迎), Ca hát (唱歌), Lần (次).'],
+    [77, '止', '', 'zhǐ', 'chỉ', 4, 'Bàn chân, dừng lại, bước đi chính xác, lịch sử', '止,正,步,武,此,历,肯', 'Hình bàn chân có các ngón chân: Bước đi (步), Chính xác (正在), Lịch sử (历史).'],
+    [78, '歹', '歺', 'dǎi', 'đãi', 4, 'Xương tàn, nguy hiểm, đặc thù', '歹,死,殊,残,殆,殖', 'Hình mảnh xương tàn: Đặc biệt/Đặc thù (特殊).'],
+    [79, '殳', '', 'shū', 'thù', 4, 'Vũ khí cán dài, gậy tre đánh gõ, giai đoạn, giống nhau', '段,般,毁,毅,投', 'Hình bàn tay (又) cầm gậy dài: Đoạn/Khoảng (一段时间), Giống nhau/Bình thường (一般).'],
+    [80, '毋', '母', 'wú', 'vô / mẫu', 4, 'Đừng, chớ; biến thể chữ Mẫu (母) chỉ người mẹ, mỗi ngày', '母,每,毒,贯', 'Chữ Mẫu (母) có hai dấu chấm tượng trưng sữa mẹ nuôi con: Mỗi (每天), Bố mẹ (父母).'],
+    [81, '比', '', 'bǐ', 'tỷ', 4, 'So sánh, thi đấu, sát cạnh nhau, tốt nghiệp', '比,毕,毙,批', 'Hai người đứng cạnh nhau để so chiều cao: So sánh (比较), Thi đấu (比赛), Tốt nghiệp (毕业).'],
+    [82, '毛', '', 'máo', 'mao', 4, 'Lông thú, tóc, len dạ, khăn mặt, đồng hào', '毛,毯,毫,尾,笔', 'Hình sợi lông mềm mại: Khăn mặt (毛巾), Bút lông (毛笔), Thảm (地毯).'],
+    [83, '氏', '', 'shì', 'thị', 4, 'Họ tộc, gia tộc, nhân dân', '氏,民,昏', 'Dòng họ gốc rễ của nhân dân (人民). Thêm chấm ở đáy thành Đê (氐: 低 thấp, 底 đáy).'],
+    [84, '气', '', 'qì', 'khí', 4, 'Không khí, hơi nước, mây mù, thời tiết, tức giận', '气,汽,氧,氛,氢', 'Những làn mây và hơi khí bốc lên: Thời tiết (天气), Tức giận (生气), Khách sáo (客气).'],
+    [85, '水', '氵,氺', 'shuǐ', 'thủy', 4, 'Nước, sông hồ, chất lỏng, tắm giặt, khát nước, bơi lội', '水,河,海,洗,澡,渴,泳,汤,清,汉', 'Dòng nước chảy (水) hoặc 3 giọt nước (氵) bên trái: Khát (渴), Tắm (洗澡), Sông (河), Rõ/Sạch (清楚).'],
+    [86, '火', '灬', 'huǒ', 'hỏa', 4, 'Ngọn lửa, sức nóng, đèn đuốc, nấu nướng, mùa hè', '火,灯,烧,烤,热,然,点,照,熊,秋', 'Ngọn lửa cháy (火: 灯 đèn, 发烧 sốt) hoặc 4 chấm lửa dưới đáy nồi (灬: 热 nóng, 点 giờ/đốt, 照 chiếu).'],
+    [87, '爪', '爫', 'zhǎo', 'trảo', 4, 'Móng vuốt, bàn tay úp từ trên xuống để hái hoặc trao nhận', '爪,爬,爱,采,受,妥,爵', 'Bàn tay chụp từ trên xuống: Yêu thương (爱), Leo trèo (爬山), Chấp nhận (接受).'],
+    [88, '父', '', 'fù', 'phụ', 4, 'Người cha, bậc trưởng bối nam giới', '父,爸,爷,斧', 'Bàn tay cầm rìu lao động trụ cột gia đình: Bố (爸爸), Ông nội (爷爷), Phụ thân (父亲).'],
+    [89, '爻', '', 'yáo', 'hào', 4, 'Hào trong Kinh Dịch, đan chéo nhau', '爻,爽,尔', 'Các thanh tre đan chéo nhau tạo thành quẻ bói: Sảng khoái/Mát mẻ (凉爽).'],
+    [90, '爿', '丬', 'qiáng', 'tường', 4, 'Tấm ván gỗ bên trái, cái giường, hình trạng, cường tráng', '床,状,墙,壮,将,奖', 'Nửa thân cây gỗ bên trái (giản thể là 丬): Cái giường (床), Hình trạng (状), Tương lai/Sẽ (将).'],
+    [91, '片', '', 'piàn', 'phiến', 4, 'Mảnh mỏng, tấm ván phải, bức ảnh, thẻ bài', '片,版,牌,牒', 'Nửa thân cây gỗ bên phải xẻ thành tấm mỏng: Bức ảnh (照片), Minh tinh/Danh thiếp (名片).'],
+    [92, '牙', '', 'yá', 'nha', 4, 'Răng hàm, răng nanh, đánh răng, xuyên qua', '牙,穿,呀,邪,芽', 'Hình chiếc răng hàm sắc nhọn: Đánh răng (刷牙), Mặc/Xuyên qua (穿 = răng 牙 khoét hang 穴).'],
+    [93, '牛', '牜', 'niú', 'ngưu', 4, 'Con trâu, con bò, sữa bò, sự vật, đặc biệt', '牛,物,特,牧,牵,牺,件', 'Đầu trâu bò có đôi sừng cong: Sữa bò (牛奶), Động vật/Lễ vật (动物/礼物), Đặc biệt (特别).'],
+    [94, '犬', '犭', 'quǎn', 'khuyển', 4, 'Con chó, loài thú bốn chân (mèo, khỉ, sư tử), đoán', '犬,狗,猫,猪,猴,狮,猜,独,狼', 'Chữ Khuyển (犬) hoặc bộ Khuyển (犭) bên trái: Chó (狗), Mèo (猫), Đoán (猜), Độc lập (独).'],
+    // --- 5 NÉT (#95 - #117) ---
+    [95, '玄', '', 'xuán', 'huyền', 5, 'Màu đen huyền bí, sâu xa, tỷ lệ', '玄,率,兹', 'Sợi tơ nhuộm màu đen thẫm huyền ảo: Hiệu suất/Tỷ lệ (效率).'],
+    [96, '玉', '王,⺩', 'yù', 'ngọc / vương', 5, 'Đá ngọc quý, trang sức, nhà vua, chơi đùa, quả bóng, hiện tại', '玉,王,班,玩,现,球,理,玻,璃,珍', 'Chuỗi 3 viên ngọc quý (王/玉): Chơi (玩), Hiện tại (现在), Bóng (球), Lớp/Làm (班).'],
+    [97, '瓜', '', 'guā', 'qua', 5, 'Quả dưa (dưa hấu, dưa chuột), bầu bí, cánh hoa', '瓜,瓣,瓢,弧', 'Hình quả dưa treo giữa những dây leo: Dưa hấu (西瓜), Cánh hoa (花瓣).'],
+    [98, '瓦', '', 'wǎ', 'ngõa', 5, 'Ngói lợp nhà, đồ gốm sứ, cái bình/chai', '瓦,瓶,瓷,瓮', 'Hình viên ngói đất nung: Cái bình/Chai lọ (瓶子, 花瓶).'],
+    [99, '甘', '', 'gān', 'cam', 5, 'Ngọt ngào, ngon lành, cam tâm', '甘,甜,某,甚', 'Cái miệng ngậm đồ ăn ngọt: Ngọt ngào (甜 = lưỡi 舌 nếm vị ngọt 甘).'],
+    [100, '生', '', 'shēng', 'sinh', 5, 'Sinh trưởng, nảy mầm, cuộc sống, học sinh, sinh nhật, tiên sinh', '生,甥,产,胜,姓', 'Mầm cây mọc vươn lên từ mặt đất (土): Học sinh (学生), Sinh nhật (生日), Bị ốm (生病).'],
+    [101, '用', '', 'yòng', 'dụng', 5, 'Sử dụng, dùng, có ích, chi phí', '用,甩,甫,备', 'Chiếc thùng gỗ có quai xách đem ra sử dụng: Dùng (用), Không cần (不用), Tác dụng (作用).'],
+    [102, '田', '', 'tián', 'điền', 5, 'Ruộng đất, cánh đồng, đàn ông, bức tranh, ở lại, thế giới', '田,男,画,留,界,畏,番,略', 'Ô ruộng có bờ ngăn chữ thập: Đàn ông (男), Bức tranh (画), Ở lại/Du học (留学), Thế giới (世界).'],
+    [103, '疋', '⺪', 'pǐ', 'thất / sơ', 5, 'Tấm vải, bàn chân bước đi, rõ ràng, nghi ngờ', '楚,疏,疑,蛋', 'Hình bàn chân và bắp chân: Rõ ràng (清楚), Quả trứng (鸡蛋), Nghi ngờ (怀疑).'],
+    [104, '疒', '', 'nè', 'nạch', 5, 'Giường bệnh, ốm đau, bệnh tật, đau nhức, gầy yếu', '病,疼,痛,瘦,疯,疗,痒,疾', 'Người nằm trên giường (广) toát 2 giọt mồ hôi bên trái: Bị bệnh (生病), Đau (疼), Gầy (瘦).'],
+    [105, '癶', '', 'bō', 'bát', 5, 'Hai bàn chân đạp sang hai bên để leo lên cao, xuất phát', '登,发,癸', 'Hai bàn chân đạp vững leo lên đỉnh núi (登山) hoặc xuất phát (出发).'],
+    [106, '白', '', 'bái', 'bạch', 5, 'Màu trắng, trong sáng, rõ ràng, số một trăm, của (trợ từ)', '白,百,的,皇,皆,皂', 'Tia nắng mặt trời chiếu trắng xóa: Màu trắng (白), Hiểu rõ (明白), Một trăm (百), Của (的).'],
+    [107, '皮', '', 'pí', 'bì', 5, 'Da thú, vỏ cây, giày da, chăn đệm, mệt mỏi', '皮,破,被,疲,披,波', 'Bàn tay (又) lột tấm da: Giày da (皮鞋), Vỏ/Da (皮), Chăn/Bị (被), Phá vỡ (破).'],
+    [108, '皿', '', 'mǐn', 'mãnh', 5, 'Bát đĩa, chậu, hộp đựng thức ăn nước uống, muối', '皿,盘,盆,盒,盐,盖,益,盛', 'Chiếc bát/khay có chân đế rộng: Cái đĩa (盘子), Chậu (盆), Hộp (盒), Muối (盐).'],
+    [109, '目', '', 'mù', 'mục', 5, 'Con mắt, thị giác, nhìn ngắm, ngủ nghỉ, chân thật, kính mắt', '目,眼,睛,看,睡,着,真,直,眉,相', 'Con mắt có 2 nét ngang con ngươi ở giữa: Con mắt (眼睛), Ngủ (睡觉), Nhìn (看), Thật (真).'],
+    [110, '矛', '', 'máo', 'mâu', 5, 'Cây giáo/mâu đâm, mâu thuẫn, mềm mại', '矛,柔,矜', 'Hình mũi giáo dài: Mâu thuẫn (矛盾), Mềm mại (温柔).'],
+    [111, '矢', '', 'shǐ', 'thỉ', 5, 'Mũi tên bắn, thẳng thắn, ngắn, thấp bé, tri thức', '矢,知,短,矮,矩', 'Hình mũi tên nhọn: Biết (知道), Ngắn (短), Thấp lùn (矮).'],
+    [112, '石', '', 'shí', 'thạch', 5, 'Hòn đá, sỏi đá, cái bát sứ, cứng rắn, nghiên cứu', '石,碗,破,硬,研,确,码,础', 'Hòn đá (口) dưới vách núi (厂): Cái bát (碗), Cứng (硬), Vỡ (破), Chắc chắn (确).'],
+    [113, '示', '礻', 'shì', 'thị / kỳ', 5, 'Bàn thờ thần linh, lễ nghi, quà cáp, chúc phúc, tivi', '示,礼,祝,神,福,社,视,禁,票', 'Bàn thờ (示) hoặc bộ Thị 1 chấm phải (礻): Lễ vật/Quà (礼物), Chúc (祝), Tivi (电视), Biểu thị (表示).'],
+    [114, '禸', '', 'róu', 'nhựu', 5, 'Dấu chân thú dẫm trên đất, rời xa', '离,禽,禹', 'Hình vết chân thú in xuống đất: Rời khỏi/Cách (离开, 离).'],
+    [115, '禾', '', 'hé', 'hòa', 5, 'Cây lúa, mùa màng, mùa thu, trồng cây, khoa học, thuê', '禾,秋,种,租,香,秀,科,称,季', 'Cây lúa có bông trĩu hạt cúi đầu ở đỉnh: Mùa thu (秋), Trồng/Loại (种), Thuê (租), Mùa (季).'],
+    [116, '穴', '', 'xué', 'huyệt', 5, 'Hang động, lỗ trống, bầu trời, cửa sổ, mặc/xuyên qua, đột nhiên', '穴,空,穿,窗,突,穷,究', 'Mái hang đá: Điều hòa/Rảnh (空调/有空), Mặc/Xuyên (穿), Cửa sổ (窗户), Đột nhiên (突然).'],
+    [117, '立', '', 'lì', 'lập', 5, 'Đứng thẳng, thành lập, nhà ga/trạm dừng, âm thanh, kết thúc', '立,站,亲,音,章,竟,端,童', 'Người đứng thẳng hai chân trên mặt đất: Trạm/Đứng (站), Âm nhạc (音), Cuối cùng (终于/竟).'],
+    // --- 6 NÉT (#118 - #146) ---
+    [118, '竹', '⺮', 'zhú', 'trúc', 6, 'Tre trúc, đũa tre, thùng/vali, giỏ bóng, tính toán, trả lời, cười', '竹,筷,箱,篮,算,答,笑,笔,第,简', 'Hai nhành lá tre (⺮): Đôi đũa (筷子), Vali (行李箱), Bóng rổ (篮球), Dự định (打算), Cười (笑), Đơn giản (简单).'],
+    [119, '米', '', 'mǐ', 'mễ', 6, 'Hạt gạo, cơm, kẹo đường, bánh ngọt, tinh thần, đơn vị mét', '米,糖,糕,粮,粉,粗,精,粥,类', 'Bốn hạt gạo quanh bông lúa: Cơm (米饭), Kẹo (糖), Bánh kem (蛋糕), Tinh thần (精神).'],
+    [120, '糸', '纟,糹', 'mì', 'mịch', 6, 'Sợi tơ, dây thừng, dệt vải, màu sắc, giấy, luyện tập, cấp bậc', '红,绿,纸,练,级,经,结,给,终,约', 'Cuộn sợi tơ (纟 bên trái): Màu đỏ (红), Màu lục (绿), Giấy (纸), Luyện tập (练习), Lớp/Cấp (年级), Đã từng/Kinh qua (已经/经理).'],
+    [121, '缶', '', 'fǒu', 'phủ', 6, 'Vò sành, bình gốm bụng to miệng nhỏ, thiếu thốn', '缸,缺,罐,陶', 'Chiếc vò gốm: Thiếu/Khuyết điểm (缺少, 缺点), Lon nước (罐).'],
+    [122, '网', '罒,⺲', 'wǎng', 'võng', 6, 'Tấm lưới đánh cá, mạng Internet, đặt để', '网,罗,置,罪,罚,署', 'Hình tấm lưới đan mắt cáo (上网 lên mạng) hoặc 4 mắt lưới nằm ngang trên đầu chữ (罒).'],
+    [123, '羊', '⺶,⺷', 'yáng', 'dương', 6, 'Con dê, con cừu, thịt cừu, vẻ đẹp, tươi ngon, kém/thiếu', '羊,美,差,着,群,鲜,羞', 'Đầu dê có 2 sừng cong: Thịt cừu (羊肉), Đẹp (美), Tươi ngon (新鲜 = cá 鱼 + dê 羊), Kém (差).'],
+    [124, '羽', '', 'yǔ', 'vũ', 6, 'Lông vũ cánh chim, vỗ cánh bay, ôn tập, cầu lông', '羽,习,翠,翻,翔,翅', 'Đôi cánh chim có lớp lông vũ: Ôn tập (复习), Tập quán (习惯), Cầu lông (羽毛球).'],
+    [125, '老', '耂', 'lǎo', 'lão', 6, 'Người già, thầy cô giáo, luôn luôn, kỳ thi', '老,考,者,孝', 'Hình cụ già tóc dài chống gậy: Thầy giáo (老师), Luôn (总是/老是), Kỳ thi (考试).'],
+    [126, '而', '', 'ér', 'nhi', 6, 'Hơn nữa, mà, nhưng mà, kiên nhẫn', '而,耐,耍,需', 'Hình bộ râu dưới cằm, dùng làm liên từ Hơn nữa (而且), Kiên nhẫn (耐心).'],
+    [127, '耒', '', 'lěi', 'lỗi', 6, 'Cái cày gỗ có nhiều răng, cày cấy ruộng đồng', '耕,耗,籍', 'Chiếc cày gỗ có răng cày đất nông nghiệp: Cày cấy (耕), Tiêu hao (耗).'],
+    [128, '耳', '', 'ěr', 'nhĩ', 6, 'Cái tai, lắng nghe, thông minh, nghề nghiệp, liên hệ', '耳,聪,取,职,联,聊,敢', 'Hình vành tai người: Cái tai (耳朵), Thông minh (聪明), Trò chuyện (聊天).'],
+    [129, '聿', '⺻', 'yù', 'duật', 6, 'Cây bút lông viết chữ, luật pháp, xây dựng, sách vở', '律,建,书,肃,肇', 'Bàn tay cầm quản bút lông thẳng đứng: Luật sư/Luật pháp (律师/法律), Sách (书).'],
+    [130, '肉', '月,⺼', 'ròu', 'nhục', 6, 'Thịt, cơ bắp, các bộ phận cơ thể người (chân, mặt, bụng, béo)', '肉,腿,脚,脸,胖,肚,胸,脑,背,育', 'Miếng thịt có vân thớ (牛肉, 羊肉), khi ghép chữ biến thành bộ Nhục (月: 腿, 脚, 脸, 胖).'],
+    [131, '臣', '', 'chén', 'thần', 6, 'Bề tôi, quan đại thần, nằm nghỉ', '臣,卧,藏,临', 'Con mắt nhìn xuống khi bề tôi cúi mình: Phòng ngủ (卧室), Cất giấu (藏).'],
+    [132, '自', '', 'zì', 'tự', 6, 'Cái mũi, tự bản thân mình, nghỉ ngơi', '自,息,臭,咱', 'Hình cái mũi ở giữa mặt: Tự mình (自己), Nghỉ ngơi (休息 = tim 心 thở đều qua mũi 自).'],
+    [133, '至', '', 'zhì', 'chí', 6, 'Đi đến nơi, đạt tới cực điểm, phòng học, thậm chí', '至,到,室,致', 'Mũi tên cắm xuống đất (土) báo hiệu đã Đến nơi: Đến (到), Phòng học (教室), Thậm chí (甚至).'],
+    [134, '臼', '', 'jiù', 'cữu', 6, 'Cái cối giã gạo, hai bàn tay vốc lên, cũ kỹ, hứng thú', '舅,旧,儿,兴,舀', 'Chiếc cối đá giã gạo: Cũ (旧), Hứng thú/Vui vẻ (感兴趣, 高兴), Cậu (舅舅).'],
+    [135, '舌', '', 'shé', 'thiệt', 6, 'Cái lưỡi, nếm vị ngọt, gió thổi, lộn xộn', '舌,甜,乱,辞,刮,舒', 'Cái lưỡi thò ra từ miệng (口): Ngọt (甜), Gió thổi (刮风), Thoải mái (舒服).'],
+    [136, '舛', '', 'chuǎn', 'suyển', 6, 'Hai bàn chân bước ngược chiều nhau, múa nhảy', '舞,舜', 'Hai bàn chân bước nhịp nhàng đối xứng trong điệu Múa (跳舞).'],
+    [137, '舟', '', 'zhōu', 'chu', 6, 'Con thuyền, tàu bè, cái đĩa, bình thường', '舟,船,航,般,盘,舰', 'Chiếc thuyền gỗ có mũi cong: Con thuyền (船), Cái đĩa (盘子), Bình thường/Giống (一般).'],
+    [138, '艮', '', 'gěn', 'cấn', 6, 'Dừng lại, cứng cỏi, rất, đi theo, ngân hàng, con mắt', '艮,很,跟,根,银,限,眼,艰', 'Gốc chữ rất phổ biến trong HSK: Rất (很), Với/Đi theo (跟), Ngân hàng (银行), Con mắt (眼睛).'],
+    [139, '色', '', 'sè', 'sắc', 6, 'Màu sắc, sắc mặt, vẻ đẹp rực rỡ', '色,艳', 'Sắc diện biểu lộ trên gương mặt: Màu sắc (颜色).'],
+    [140, '艸', '艹', 'cǎo', 'thảo', 6, 'Cỏ cây, hoa lá, trà, rau củ, trái cây, thuốc thảo mộc', '草,花,茶,菜,药,蓝,苹,蕉,节,苦', 'Hai mầm cỏ mọc trên đầu chữ (艹): Cỏ (草), Hoa (花), Trà (茶), Rau (菜), Táo (苹果), Chuối (香蕉), Lễ/Tiết (节).'],
+    [141, '虍', '', 'hū', 'hổ', 6, 'Vằn da hổ, con hổ, suy nghĩ lo lắng, nơi chốn', '虎,虑,虚,处', 'Đầu hổ và bộ lông vằn: Con hổ (老虎), Suy nghĩ/Cân nhắc (考虑), Nơi chốn (处).'],
+    [142, '虫', '', 'chóng', 'trùng', 6, 'Côn trùng, sâu bọ, trứng, tôm, cua, rắn, mật ong', '虫,蛋,虾,蛇,蜂,蝶,蜜,蛙', 'Hình con sâu/rắn: Quả trứng (鸡蛋), Con tôm (虾), Mật ong (蜂蜜), Con rắn (蛇).'],
+    [143, '血', '', 'xuè', 'huyết', 6, 'Máu huyết, nhiệt huyết, huyết thống', '血,衅', 'Giọt máu (丶) nhỏ vào chiếc chén lễ (皿): Máu (血).'],
+    [144, '行', '', 'xíng', 'hành / hàng', 6, 'Ngã tư đường, đi bộ, ngân hàng, đường phố, hành lý', '行,街,衡,衍', 'Ngã tư đường lớn gồm bước chân trái (彳) và phải (亍): Đường phố (街道), Ngân hàng (银行), Hành lý (行李).'],
+    [145, '衣', '衤', 'yī', 'y', 6, 'Quần áo, trang phục, váy, sơ mi, chăn đệm, đồng hồ/biểu thị', '衣,裤,衫,裙,被,袜,袋,装,表', 'Áo cổ chéo (衣服) hoặc bộ Y 2 chấm phải (衤): Quần (裤子), Sơ mi (衬衫), Váy (裙子), Chăn (被).'],
+    [146, '襾', '西,覀', 'yà', 'á / tây', 6, 'Che đậy phía trên, phương Tây, muốn/cần, vé', '西,要,覆,票,栗', 'Hình chim về tổ lúc mặt trời lặn phương Tây (西), Cần/Muốn (要, 需要), Vé (票).'],
+    // --- 7 NÉT (#147 - #166) ---
+    [147, '见', '見', 'jiàn', 'kiến', 7, 'Nhìn thấy, gặp mặt, cảm thấy, tivi, phát hiện', '见,视,觉,观,现,规,览', 'Con mắt lớn (目) đặt trên đôi chân (儿): Gặp mặt (见面), Cảm thấy/Ngủ (觉得/睡觉), Tivi (电视).'],
+    [148, '角', '', 'jiǎo', 'giác', 7, 'Sừng thú, góc tường, đồng hào (0.1 tệ), giải quyết/hiểu', '角,解,触', 'Chiếc sừng trâu bò có vân khía: Góc/Đồng hào (角), Hiểu/Giải quyết (了解, 解决).'],
+    [149, '言', '讠,訁', 'yán', 'ngôn', 7, 'Lời nói, ngôn ngữ, hỏi, mời, đọc, giảng, quen biết, bài học', '言,话,说,请,读,讲,认,识,课,谢', 'Lời nói phát ra từ miệng (讠 bên trái): Nói (说话), Mời (请), Quen biết (认识), Bài học (课), Cảm ơn (谢).'],
+    [150, '谷', '', 'gǔ', 'cốc', 7, 'Thung lũng khe núi, suối nguồn, dễ dàng/bao dung', '谷,欲,容,俗', 'Khe nước chảy mở rộng giữa hai sườn núi: Dễ dàng (容易), Phong tục (俗).'],
+    [151, '豆', '', 'dòu', 'đậu', 7, 'Hạt đậu, bát chân cao đựng đồ lễ, ngắn', '豆,短,登,头,豌', 'Chiếc bát cổ chân cao, chỉ các loại đậu (咖啡豆 hạt cà phê, 豆腐 đậu phụ), Ngắn (短).'],
+    [152, '豕', '', 'shǐ', 'thỉ', 7, 'Con lợn (heo), gia đình, con voi, hình ảnh', '家,象,猪,豪,豫', 'Con lợn bụng béo 4 chân: Gia đình (家 = mái nhà 宀 có nuôi lợn 豕), Con voi/Giống (大象/像).'],
+    [153, '豸', '', 'zhì', 'trãi', 7, 'Loài thú săn mồi thân dài (báo, chồn), lịch sự/diện mạo', '貌,豹,貂', 'Con báo săn mồi có lưng uốn dài: Lễ phép/Diện mạo (礼貌).'],
+    [154, '贝', '貝', 'bèi', 'bối', 7, 'Vỏ sò làm tiền tệ cổ, tiền bạc, đắt, mua bán, thi đấu, chúc mừng', '贝,贵,买,卖,贺,赛,贷,费,赢,宾', 'Vỏ sò biển làm tiền cổ: Đắt/Quý (贵), Mua (买), Bán (卖), Thi đấu (比赛), Siêu thị (超市).'],
+    [155, '赤', '', 'chì', 'xích', 7, 'Màu đỏ rực, chân thành, tha thứ', '赤,赦,赫', 'Con người (大) đứng bên ngọn lửa lớn (火) ánh lên màu đỏ rực.'],
+    [156, '走', '', 'zǒu', 'tẩu', 7, 'Đi bộ, chạy, thức dậy, vượt qua, càng ngày càng, thú vị', '走,起,越,超,趣,赶,赴', 'Người vung tay (土) bước chân (止) đi nhanh: Đi (走), Dậy (起床), Càng (越来越), Siêu thị (超市), Thú vị (有趣).'],
+    [157, '足', '⻊', 'zú', 'túc', 7, 'Bàn chân, đá bóng, chạy, nhảy, con đường, đi theo', '足,跑,跳,踢,路,跟,跌,距,踊', 'Đầu gối (口) và bàn chân (止): Đá bóng (踢足球), Chạy (跑步), Nhảy (跳舞), Đường (路), Với/Theo (跟).'],
+    [158, '身', '', 'shēn', 'thân', 7, 'Thân thể, cơ thể người, nằm nghỉ', '身,射,躺,躯', 'Hình cơ thể người nhìn nghiêng: Cơ thể/Sức khỏe (身体), Nằm xuống (躺).'],
+    [159, '车', '車', 'chē', 'xa', 7, 'Xe cộ, chiếc xe, nhẹ nhàng, so sánh, chuyển động', '车,辆,轻,较,转,软,轮,输,载', 'Chiếc xe có trục và 2 bánh xe: Xe hơi/Tàu (汽车/火车), Lượng từ chiếc xe (辆), Nhẹ (轻), So sánh (比较).'],
+    [160, '辛', '', 'xīn', 'tân', 7, 'Cay nồng, vất vả, cực nhọc, làm việc/giải quyết', '辛,辣,辞,辟,办', 'Vị cay hoặc sự vất vả: Vất vả (辛苦), Cay (辣), Văn phòng/Cách làm (办公室/办法).'],
+    [161, '辰', '', 'chén', 'thần', 7, 'Buổi sáng sớm (giờ Thìn 7h-9h), tinh tú, chấn động', '辰,晨,震,唇', 'Chiếc liềm vỏ sò cắt cỏ lúc bình minh: Buổi sáng sớm (早晨).'],
+    [162, '辵', '辶,⻌', 'chuò', 'sước', 7, 'Bước đi trên đường dài, xa gần, đưa tiễn, chọn lựa, gặp gỡ, muộn', '这,那,远,近,送,过,还,选,迎,迟,道', 'Bước chân đi trên đường (辶): Xa (远), Gần (近), Tiễn/Tặng (送), Chọn (选择), Đón (欢迎), Đến muộn (迟到).'],
+    [163, '邑', '阝(phải)', 'yì', 'ấp', 7, 'Thành phố, vùng đất, thủ đô, hàng xóm, bộ phận (Leo đồi bên phải)', '那,都,邮,部,邻,郊,郭,邦', 'Bộ Ấp (阝 đứng bên PHẢI chữ) chỉ vùng đất, đô thị: Đều/Thủ đô (都), Hàng xóm (邻居), Bưu điện (邮).'],
+    [164, '酉', '', 'yǒu', 'dậu', 7, 'Bình ủ rượu, bia rượu, chua, say, tỉnh giấc', '酒,酸,醒,醉,配,醋,酱,酬', 'Vò sành ủ rượu có vạch nước bên trong: Rượu bia (啤酒), Chua (酸), Tỉnh giấc (醒).'],
+    [165, '釆', '', 'biàn', 'biện', 7, 'Phân biệt dấu chân thú, giải thích rõ ràng, quen thuộc', '释,番,悉', 'Nhìn dấu chân thú để phân biệt: Giải thích (解释), Quen thuộc (熟悉).'],
+    [166, '里', '', 'lǐ', 'lý', 7, 'Làng xóm, bên trong, dặm đường (500m), nặng/quan trọng', '里,重,野,量', 'Có ruộng (田) và đất (土) là nơi ở: Bên trong (里), Nặng/Quan trọng (重, 重要), Số lượng (量).'],
+    // --- 8 NÉT (#167 - #175) ---
+    [167, '金', '钅,釒', 'jīn', 'kim', 8, 'Kim loại, vàng bạc, tiền tệ, ngân hàng, tàu điện ngầm, đồng hồ, kính', '金,钱,银,铁,钟,镜,错,铅,锻,锅', 'Quặng kim loại (钅 bên trái): Tiền (钱), Ngân hàng (银行), Tàu điện ngầm (地铁), Đồng hồ (钟), Kính mắt (眼镜), Rèn luyện (锻炼).'],
+    [168, '长', '長,镸', 'cháng', 'trường / trưởng', 8, 'Dài lâu, mái tóc dài, lớn lên, trưởng thành, hiệu trưởng', '长,张,账,套', 'Hình người có mái tóc dài: Dài (长 - cháng), Lớn lên/Trưởng (长大/校长 - zhǎng).'],
+    [169, '门', '門', 'mén', 'môn', 8, 'Cánh cổng hai cánh, cửa ra vào, hỏi, thời gian/phòng, tin tức', '门,问,间,闻,闹,闪,闭,闲,阅', 'Cổng lớn 2 cánh: Cửa (门), Hỏi (问), Phòng/Thời gian (房间/时间), Tin tức (新闻), Náo nhiệt (热闹).'],
+    [170, '阜', '阝(trái)', 'fù', 'phụ', 8, 'Gò đất cao, sườn núi, bậc thềm, mặt trời, học viện, trừ ra (Leo đồi bên trái)', '院,阳,阴,除,际,阿,附,降,随,陪', 'Bộ Phụ (阝 đứng bên TRÁI chữ) chỉ sườn đồi, bậc thang: Mặt trời (太阳), Học viện/Bệnh viện (学院/医院), Trừ ra (除了), Gần đây (附近).'],
+    [171, '隶', '', 'lì', 'đãi / lệ', 8, 'Đuổi kịp, bắt lấy, khỏe mạnh', '隶,康', 'Bàn tay (又) nắm giữ từ phía sau: Khỏe mạnh (健康).'],
+    [172, '隹', '', 'zhuī', 'chuy', 8, 'Loài chim đuôi ngắn, khó khăn, ai, chuẩn bị, đẩy', '难,谁,推,准,集,售,雌', 'Hình chú chim đuôi ngắn: Khó khăn (难, 难过), Ai (谁), Đẩy (推), Chuẩn bị (准备).'],
+    [173, '雨', '⻗', 'yǔ', 'vũ', 8, 'Mưa, tuyết, mây, số không/lẻ, cần thiết, sấm sét', '雨,雪,云,零,雷,雾,需,霜,露', 'Bốn hạt mưa rơi từ vòm trời: Mưa (下雨), Tuyết (雪), Số 0 (零), Cần thiết (需要).'],
+    [174, '青', '靑', 'qīng', 'thanh', 8, 'Màu xanh tươi trẻ, thanh niên, mời, nước trong, trời nắng, con mắt, tình cảm, yên tĩnh', '青,请,清,晴,睛,情,静,精', 'Bộ gốc "Gia đình họ Thanh (qīng/jīng)": Mời (请), Sạch (清楚), Nắng (晴), Mắt (眼睛), Tình cảm (情), Yên tĩnh (安静).'],
+    [175, '非', '', 'fēi', 'phi', 8, 'Không phải, vô cùng, cà phê, dựa vào, xếp hàng', '非,靠,排,辈,悲,啡', 'Đôi cánh chim vỗ ngược chiều nhau: Vô cùng (非常), Cà phê (咖啡), Dựa vào (靠).'],
+    // --- 9 NÉT (#176 - #186) ---
+    [176, '面', '靣', 'miàn', 'diện', 9, 'Khuôn mặt, bề mặt, phía/bên, mì sợi, bánh mì, gặp mặt', '面,腼', 'Khuôn mặt người có mắt và đường viền má: Mì sợi (面条), Bánh mì (面包), Gặp mặt (见面).'],
+    [177, '革', '', 'gé', 'cách', 9, 'Da thuộc, đôi giày, cải cách', '革,鞋,靴,鞭', 'Tấm da thú căng phẳng đã thuộc kỹ: Đôi giày (鞋, 皮鞋).'],
+    [178, '韦', '韋', 'wéi', 'vi', 9, 'Da thuộc mềm, vây quanh, dẻo dai', '韦,韧,韩', 'Hai bàn chân đi tuần tra vòng quanh thành trì.'],
+    [179, '韭', '', 'jiǔ', 'phỉ / cửu', 9, 'Rau hẹ (loài rau mọc thành bụi trên mặt đất)', '韭', 'Hình những lá rau hẹ mọc thẳng đứng từ mặt đất (一): Bánh hẹ (韭菜).'],
+    [180, '音', '', 'yīn', 'âm', 9, 'Âm thanh, tiếng nhạc, âm nhạc, ý nghĩa', '音,意,韵,章', 'Lời nói phát ra thành giai điệu: Âm nhạc (音乐), Thanh âm (声音), Ý nghĩa (意思).'],
+    [181, '页', '頁', 'yè', 'hiệt', 9, 'Cái đầu người, khuôn mặt, trang sách, câu hỏi/đề bài, chăm sóc, phải', '页,题,须,顾,顿,预,领,颜,颗,顺', 'Hình cái đầu người: Đề bài/Câu hỏi (题, 问题), Chăm sóc (照顾), Phải (必须), Màu sắc (颜色).'],
+    [182, '风', '風', 'fēng', 'phong', 9, 'Cơn gió, gió thổi, phong cảnh, bay phấp phới', '风,飘,刮,飙', 'Làn gió cuốn cánh buồm: Gió thổi (刮风), Phong cảnh (风景).'],
+    [183, '飞', '飛', 'fēi', 'phi', 9, 'Bay lượn, máy bay, cất cánh', '飞', 'Hình chim sải đôi cánh bay vút lên trời: Máy bay (飞机).'],
+    [184, '食', '饣,飠', 'shí', 'thực', 9, 'Thức ăn, cơm gạo, đồ uống, đói, no, nhà hàng, bánh nướng', '食,饭,饿,饱,饮,馆,饼,饺,餐,饲', 'Nồi cơm tỏa hương (饣 bên trái): Cơm (米饭), Đói (饿), No (饱), Đồ uống (饮料), Nhà hàng (饭馆).'],
+    [185, '首', '', 'shǒu', 'thủ', 9, 'Cái đầu, đứng đầu, đầu tiên, con đường', '首,道', 'Cái đầu người có tóc trên đỉnh: Đầu tiên (首先), Con đường/Biết (道, 知道).'],
+    [186, '香', '', 'xiāng', 'hương', 9, 'Mùi thơm, hương thơm, ngon miệng, quả chuối', '香,馨', 'Lúa chín (禾) nấu tỏa vị ngọt thơm (日): Thơm ngon (香), Quả chuối (香蕉).'],
+    // --- 10 NÉT (#187 - #194) ---
+    [187, '马', '馬', 'mǎ', 'mã', 10, 'Con ngựa, cưỡi ngựa/đạp xe, lập tức, tài xế, kiểm tra', '马,骑,骗,驾,骂,骄,验,惊', 'Con ngựa có bờm và 4 vó phi nhanh: Con ngựa (马), Lập tức (马上), Đạp xe/Cưỡi (骑).'],
+    [188, '骨', '', 'gǔ', 'cốt', 10, 'Bộ xương, khớp xương, cốt cách', '骨,髓,骷', 'Khớp xương phía trên gắn với cơ thịt (月) phía dưới: Xương (骨头).'],
+    [189, '高', '', 'gāo', 'cao', 10, 'Cao lớn, lầu cao, vui vẻ, nâng cao', '高,敲', 'Tòa tháp cổng thành hai tầng cao vút: Cao (高), Vui vẻ (高兴), Nâng cao (提高).'],
+    [190, '髟', '', 'biāo', 'bưu', 10, 'Mái tóc dài, râu tóc', '发,须,髻,鬓', 'Búi tóc dài (长) với 3 lọn tóc rủ xuống (彡): Tóc (头发).'],
+    [191, '鬥', '斗(đấu)', 'dòu', 'đấu', 10, 'Chiến đấu, tranh đấu, ồn ào náo nhiệt (giản thể gộp vào 斗)', '闹,斗,哄', 'Hai người giao đấu với nhau: Ồn ào/Náo nhiệt (热闹 = chợ 市 đông người tranh luận 門/斗).'],
+    [192, '鬯', '', 'chàng', 'sưởng', 10, 'Rượu nếp ủ thảo mộc thơm dùng trong lễ tế', '鬯,郁', 'Bình rượu quý ủ hương thảo mộc thơm ngát.'],
+    [193, '鬲', '', 'lì', 'cách', 10, 'Nồi đồng ba chân rỗng để đun nấu, ngăn cách', '鬲,融,隔', 'Chiếc vạc ba chân rỗng chứa nước đun trên lửa: Ngăn cách (隔).'],
+    [194, '鬼', '', 'guǐ', 'quỷ', 10, 'Con ma, linh hồn, tinh ranh, sức hấp dẫn', '鬼,魂,魔,魅', 'Nhân vật đeo mặt nạ lớn trong lễ hội cổ: Hấp dẫn/Quyến rũ (魅力).'],
+    // --- 11 NÉT (#195 - #200) ---
+    [195, '鱼', '魚', 'yú', 'ngư', 11, 'Con cá, hải sản, tươi ngon', '鱼,鲜,鲤,鲸', 'Con cá có đầu, thân vảy (田) và cái đuôi (一): Con cá (鱼), Tươi ngon (新鲜).'],
+    [196, '鸟', '鳥', 'niǎo', 'điểu', 11, 'Con chim, gà, vịt, gia cầm', '鸟,鸡,鸭,鹅,鸽,鹏', 'Chú chim có mỏ, mắt (丶) và lông đuôi: Con chim (鸟), Con gà (鸡), Trứng gà (鸡蛋).'],
+    [197, '卤', '鹵', 'lǔ', 'lỗ', 11, 'Muối mặn tự nhiên, nước sốt kho hầm', '卤,咸,碱', 'Hạt muối kết tinh trong ruộng muối: Vị mặn (咸).'],
+    [198, '鹿', '', 'lù', 'lộc', 11, 'Con hươu, con nai, vẻ đẹp lộng lẫy', '鹿,丽,麟', 'Con hươu có cặp sừng nhánh trên đầu: Xinh đẹp (美丽).'],
+    [199, '麦', '麥', 'mài', 'mạch', 11, 'Lúa mì, lúa mạch, bánh mì', '麦,麸,面', 'Cây lúa mì: Bánh mì (面包), Yến mạch (燕麦).'],
+    [200, '麻', '', 'má', 'ma', 11, 'Cây gai dầu, sợi đay, tê mỏi, làm phiền', '麻,摩,魔', 'Hai bó sợi gai (林) phơi dưới mái hiên (广): Làm phiền (麻烦), Tê cay (麻辣).'],
+    // --- 12 NÉT (#201 - #204) ---
+    [201, '黄', '黃', 'huáng', 'hoàng', 12, 'Màu vàng, đất hoàng thổ, hoàng kim', '黄,横', 'Màu vàng óng của cánh đồng lúa chín: Màu vàng (黄色).'],
+    [202, '黍', '', 'shǔ', 'thử', 12, 'Lúa nếp hạt vàng dùng nấu rượu hoặc làm bánh dẻo', '黍,黏,黎', 'Cây lúa (禾) ngâm trong nước (水) có độ kết dính cao: Dính (黏).'],
+    [203, '黑', '', 'hēi', 'hắc', 12, 'Màu đen, bóng tối, bảng đen, im lặng', '黑,默,点,党', 'Khói đen bám trên ống khói khi đun lửa (灬) ở dưới: Màu đen (黑), Bảng đen (黑板).'],
+    [204, '黹', '', 'zhǐ', 'chỉ', 12, 'May vá, thêu thùa kim chỉ', '黹,黼', 'Hình những đường kim mũi chỉ đan xen trên tấm vải.'],
+    // --- 13 NÉT (#205 - #208) ---
+    [205, '黾', '黽', 'mǐn', 'mãnh', 13, 'Con ếch, con cóc, nỗ lực cố gắng', '黾,蛙,鳖', 'Hình con ếch nhìn từ trên lưng xuống với cái bụng tròn và 4 chân.'],
+    [206, '鼎', '', 'dǐng', 'đỉnh', 13, 'Cái đỉnh đồng ba chân hai tai, quyền lực tối cao', '鼎', 'Chiếc đỉnh đồng 3 chân tượng trưng cho lời nói chắc như đinh đóng cột (一言九鼎).'],
+    [207, '鼓', '', 'gǔ', 'cổ', 13, 'Cái trống, đánh trống, cổ vũ khích lệ', '鼓,鼙', 'Mặt trống có giá đỡ bên trái + bàn tay (支) cầm dùi gõ bên phải: Cổ vũ (鼓励).'],
+    [208, '鼠', '', 'shǔ', 'thử', 13, 'Con chuột, loài gặm nhấm, chuột máy tính', '鼠,鼬', 'Con chuột có răng nhọn phía trên và đuôi dài phía dưới: Con chuột (老鼠, 鼠标).'],
+    // --- 14 NÉT (#209 - #210) ---
+    [209, '鼻', '', 'bí', 'tỵ', 14, 'Cái mũi, khứu giác, ngửi', '鼻,鼾', 'Gồm chữ Tự (自 - cái mũi) ở trên + sống mũi (畀) ở dưới: Cái mũi (鼻子).'],
+    [210, '齐', '齊', 'qí', 'tề', 14, 'Đều đặn, bằng phẳng, gọn gàng chỉnh tề', '齐,剂,济', 'Những bông lúa mọc cao bằng phẳng đều tăm tắp: Gọn gàng chỉnh tề (整齐).'],
+    // --- 15 NÉT (#211) ---
+    [211, '齿', '齒', 'chǐ', 'xỉ', 15, 'Hàm răng, răng cưa, tuổi tác', '齿,龄', 'Hàm răng xếp đều trong khuôn miệng (凵) với chữ Chỉ (止) chỉ âm ở trên: Răng (牙齿), Tuổi (年龄).'],
+    // --- 16 NÉT (#212 - #213) ---
+    [212, '龙', '龍', 'lóng', 'long', 16, 'Con rồng, linh vật biểu tượng quyền uy và may mắn', '龙,袭,聋,笼', 'Rồng thiêng uốn lượn bay lên mây: Con rồng (龙), Đèn lồng (灯笼).'],
+    [213, '龟', '龜', 'guī', 'quy', 16, 'Con rùa, trường thọ, mai rùa', '龟,龝', 'Con rùa có đầu nhô lên trên, mai rùa ở giữa và cái đuôi cong ở dưới: Con rùa (乌龟).'],
+    // --- 17 NÉT (#214) ---
+    [214, '龠', '', 'yuè', 'dược', 17, 'Ống sáo trúc nhiều lỗ thời cổ đại, hòa hợp âm nhạc', '龠,龢', 'Bộ thủ thứ 214 (17 nét - nhiều nét nhất): Hình chiếc sáo trúc nhiều ống ghép lại thổi thành nhạc lễ.']
+  ];
+
   /**
    * Build enriched list of radicals by linking with HSK3_DEFAULT_VOCAB
+   * Modes:
+   *  - 'core': 50 high-frequency HSK radicals & left/top/bottom variants
+   *  - 'kangxi214': All 214 standard Kangxi Radicals (#1 to #214)
+   *  - 'full137': 137 radicals extracted from HSK 3 vocabulary decompositions
+   *  - 'all_merged': Union of kangxi214 + core + full137 for Inspector lookup
    */
   function getEnrichedRadicals(mode = 'core') {
     const allVocab = window.HSKStorage ? window.HSKStorage.getAllVocab() : (window.HSK3_DEFAULT_VOCAB || []);
@@ -1283,13 +1529,27 @@ window.HSKRadicals = (function () {
       });
     });
 
+    // Map Kangxi IDs by symbol & variant for cross-referencing
+    const kangxiBySymbol = new Map();
+    KANGXI_214_RAW.forEach(row => {
+      const [kxId, radSym, varStr] = row;
+      kangxiBySymbol.set(radSym, kxId);
+      if (varStr) {
+        varStr.split(',').forEach(v => {
+          const cleanV = v.replace(/\(.*?\)/g, '').trim();
+          if (cleanV && !kangxiBySymbol.has(cleanV)) {
+            kangxiBySymbol.set(cleanV, kxId);
+          }
+        });
+      }
+    });
+
     const coreMap = new Map();
     const enrichedCore = CORE_RADICALS.map(rad => {
       const matched = vocabByRad.get(rad.radical) || vocabByRad.get(rad.standalone) || {
         chars: new Set(),
         words: []
       };
-      // Also match words containing any of sampleChars if decomposition used standalone or variant
       const matchedWords = [...matched.words];
       allVocab.forEach(w => {
         if (matchedWords.length < 18 && !matchedWords.some(mw => mw.id === w.id)) {
@@ -1300,8 +1560,10 @@ window.HSKRadicals = (function () {
       });
 
       const mergedChars = Array.from(new Set([...rad.sampleChars, ...Array.from(matched.chars)]));
+      const kxId = kangxiBySymbol.get(rad.radical) || kangxiBySymbol.get(rad.standalone) || null;
       const item = {
         ...rad,
+        kangxiId: kxId,
         isCore: true,
         hskWords: matchedWords,
         allChars: mergedChars
@@ -1310,8 +1572,79 @@ window.HSKRadicals = (function () {
       return item;
     });
 
-    if (mode !== 'full137') {
+    if (mode === 'core') {
       return enrichedCore;
+    }
+
+    // Build the full 214 Kangxi Radicals list (#1 to #214)
+    const enrichedKangxi214 = KANGXI_214_RAW.map(row => {
+      const [kxId, radSym, varStr, pinyin, hanViet, strokes, meaning, sampleCSV, mnemonic] = row;
+      const sampleChars = sampleCSV.split(',').map(s => s.trim()).filter(Boolean);
+      const variantSymbols = varStr
+        ? varStr.split(',').map(v => v.replace(/\(.*?\)/g, '').trim()).filter(Boolean)
+        : [];
+
+      // Find any rich core entry matching this Kangxi radical or its primary variant
+      const richCore =
+        coreMap.get(radSym) ||
+        variantSymbols.map(v => coreMap.get(v)).find(Boolean) ||
+        null;
+
+      // Gather HSK 3 words from decomposition + sampleChars
+      const hskWords = [];
+      const charSet = new Set(sampleChars);
+
+      [radSym, ...variantSymbols].forEach(sym => {
+        const vEntry = vocabByRad.get(sym);
+        if (vEntry) {
+          vEntry.chars.forEach(c => charSet.add(c));
+          vEntry.words.forEach(w => {
+            if (!hskWords.some(existing => existing.id === w.id)) {
+              hskWords.push(w);
+            }
+          });
+        }
+      });
+
+      allVocab.forEach(w => {
+        if (hskWords.length < 18 && !hskWords.some(mw => mw.id === w.id)) {
+          if (sampleChars.some(sc => sc.length === 1 && w.hanzi.includes(sc))) {
+            hskWords.push(w);
+          }
+        }
+      });
+
+      const allChars = Array.from(charSet);
+      // Choose a valid standard CJK character for HanziWriter stroke practice
+      const drawableChar =
+        (richCore && richCore.standalone) ||
+        sampleChars.find(c => c.length === 1) ||
+        radSym;
+
+      return {
+        kangxiId: kxId,
+        radical: radSym,
+        standalone: drawableChar,
+        variants: varStr ? `${radSym} • Biến thể: ${varStr}` : `${radSym} (Bộ Khang Hy #${kxId})`,
+        name: `Bộ ${hanViet.charAt(0).toUpperCase() + hanViet.slice(1)}`,
+        pinyin,
+        hanViet,
+        strokes,
+        position: richCore ? richCore.position : `Bộ Khang Hy #${kxId} (${strokes} nét)`,
+        category: richCore ? richCore.category : 'objects_places',
+        meaning: richCore ? richCore.meaning : meaning,
+        origin: richCore ? richCore.origin : `Bộ thủ thứ #${kxId} trong 214 Bộ Thủ Khang Hy (${strokes} nét).`,
+        mnemonic: richCore ? richCore.mnemonic : mnemonic,
+        confusableWith: richCore ? richCore.confusableWith : null,
+        sampleChars,
+        allChars,
+        hskWords,
+        isCore: Boolean(richCore)
+      };
+    });
+
+    if (mode === 'kangxi214') {
+      return enrichedKangxi214;
     }
 
     // Merge remaining radicals from the 137 vocabulary decomposition radicals
@@ -1322,10 +1655,11 @@ window.HSKRadicals = (function () {
       const desc = bracketMatch ? bracketMatch[1] : val.fullLabel;
       const parts = desc.split(/\s*-\s*/);
       const hanViet = parts[0] || 'Bộ HSK';
-      const meaning = parts[1] || `Bộ thủ cấu tạo chữ (${ desc })`;
+      const meaning = parts[1] || `Bộ thủ cấu tạo chữ (${desc})`;
       const sampleChars = Array.from(val.chars);
 
       extraRadicals.push({
+        kangxiId: kangxiBySymbol.get(radKey) || null,
         radical: radKey,
         standalone: sampleChars[0] || radKey,
         variants: val.fullLabel,
@@ -1346,11 +1680,27 @@ window.HSKRadicals = (function () {
       });
     });
 
-    return [...enrichedCore, ...extraRadicals];
+    if (mode === 'full137') {
+      return [...enrichedCore, ...extraRadicals];
+    }
+
+    // 'all_merged': deduplicated union of kangxi214 + enrichedCore + extraRadicals
+    const mergedMap = new Map();
+    [...enrichedCore, ...enrichedKangxi214, ...extraRadicals].forEach(item => {
+      if (!mergedMap.has(item.radical)) {
+        mergedMap.set(item.radical, item);
+      }
+    });
+    return Array.from(mergedMap.values());
   }
 
   function getFilteredRadicals() {
-    const mode = currentCategory === 'full137' ? 'full137' : 'core';
+    let mode = 'core';
+    if (currentCategory === 'kangxi214') {
+      mode = 'kangxi214';
+    } else if (currentCategory === 'full137') {
+      mode = 'full137';
+    }
     const list = getEnrichedRadicals(mode);
     const q = searchQuery.trim().toLowerCase();
 
@@ -1358,18 +1708,30 @@ window.HSKRadicals = (function () {
       if (currentCategory === 'confusable' && !item.confusableWith) return false;
       if (
         currentCategory !== 'all' &&
+        currentCategory !== 'kangxi214' &&
         currentCategory !== 'confusable' &&
         currentCategory !== 'full137' &&
         item.category !== currentCategory
       ) {
         return false;
       }
+      if (currentStrokeFilter > 0) {
+        if (currentStrokeFilter === 100) {
+          if (item.strokes < 10) return false;
+        } else if (item.strokes !== currentStrokeFilter) {
+          return false;
+        }
+      }
       if (!q) return true;
+      const kxMatch = item.kangxiId && (`#${item.kangxiId}` === q || `${item.kangxiId}` === q || `bộ ${item.kangxiId}` === q);
       return (
+        kxMatch ||
         item.radical.includes(q) ||
         item.standalone.includes(q) ||
+        (item.variants && item.variants.toLowerCase().includes(q)) ||
         item.name.toLowerCase().includes(q) ||
         item.hanViet.toLowerCase().includes(q) ||
+        (item.pinyin && item.pinyin.toLowerCase().includes(q)) ||
         item.meaning.toLowerCase().includes(q) ||
         item.mnemonic.toLowerCase().includes(q) ||
         item.allChars.some(c => c.includes(q))
@@ -1381,13 +1743,14 @@ window.HSKRadicals = (function () {
     const rootEl = document.getElementById('view-radicals');
     if (!rootEl) return;
 
+    const kxList = getEnrichedRadicals('kangxi214');
     const coreList = getEnrichedRadicals('core');
-    const masteredCount = coreList.filter(r => window.HSKStorage.getRadicalRecord(r.radical).mastered).length;
-    const pct = Math.round((masteredCount / coreList.length) * 100);
+    const masteredKx = kxList.filter(r => window.HSKStorage.getRadicalRecord(r.radical).mastered).length;
+    const masteredCore = coreList.filter(r => window.HSKStorage.getRadicalRecord(r.radical).mastered).length;
 
     const headerStatsEl = document.getElementById('radicals-mastery-summary');
     if (headerStatsEl) {
-      headerStatsEl.innerHTML = `Đã thuộc: <strong class="text-emerald-400 font-mono-code">${masteredCount}/${coreList.length}</strong> bộ cốt lõi (${pct}%)`;
+      headerStatsEl.innerHTML = `Đã thuộc: <strong class="text-emerald-400 font-mono-code">${masteredCore}/50</strong> bộ cốt lõi • <strong class="text-amber-300 font-mono-code">${masteredKx}/214</strong> bộ Khang Hy`;
     }
 
     // Update sub-tab buttons
@@ -1426,18 +1789,23 @@ window.HSKRadicals = (function () {
     const filtered = getFilteredRadicals();
     const countEl = document.getElementById('rad-explorer-count');
     if (countEl) {
-      countEl.textContent = `${filtered.length} bộ thủ`;
+      countEl.textContent = `Hiển thị ${filtered.length} bộ thủ`;
     }
 
     // Highlight active category pill
     document.querySelectorAll('[data-rad-cat]').forEach(btn => {
       const cat = btn.getAttribute('data-rad-cat');
       if (cat === currentCategory) {
-        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 transition';
+        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 shadow-md transition';
       } else {
         btn.className = 'px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 transition';
       }
     });
+
+    const strokeSelectEl = document.getElementById('rad-stroke-filter');
+    if (strokeSelectEl) {
+      strokeSelectEl.value = String(currentStrokeFilter);
+    }
 
     const gridEl = document.getElementById('rad-explorer-grid');
     if (!gridEl) return;
@@ -1445,6 +1813,17 @@ window.HSKRadicals = (function () {
     if (!filtered.some(r => r.radical === selectedRadicalKey) && filtered.length > 0) {
       selectedRadicalKey = filtered[0].radical;
       activeWriterChar = filtered[0].standalone || filtered[0].allChars[0] || '水';
+    }
+
+    if (filtered.length === 0) {
+      gridEl.innerHTML = `
+        <div class="col-span-full p-8 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-2">
+          <div class="text-2xl">🔍</div>
+          <div class="text-sm font-bold text-white">Không tìm thấy bộ thủ phù hợp với bộ lọc hiện tại</div>
+          <p class="text-xs text-slate-400">Hãy thử chọn "👑 Trọn bộ 214 Bộ Thủ Khang Hy" hoặc chọn "Tất cả số nét" nhé!</p>
+        </div>
+      `;
+      return;
     }
 
     gridEl.innerHTML = filtered
@@ -1455,6 +1834,9 @@ window.HSKRadicals = (function () {
           .slice(0, 7)
           .map(ch => `<span class="px-1.5 py-0.5 rounded bg-slate-950 text-slate-200 font-hanzi-serif text-sm border border-slate-800">${ch}</span>`)
           .join('');
+        const kxBadge = rad.kangxiId
+          ? `<span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono-code text-[10px] font-bold border border-indigo-500/30">Bộ #${rad.kangxiId}</span>`
+          : '';
 
         return `
           <div
@@ -1468,18 +1850,19 @@ window.HSKRadicals = (function () {
             <div>
               <div class="flex items-start justify-between gap-2">
                 <div class="flex items-center gap-3">
-                  <div class="w-14 h-14 rounded-2xl bg-slate-950 border border-indigo-500/30 flex items-center justify-center font-hanzi-serif text-4xl font-bold text-white shadow-inner">
+                  <div class="w-14 h-14 rounded-2xl bg-slate-950 border border-indigo-500/30 flex items-center justify-center font-hanzi-serif text-4xl font-bold text-white shadow-inner shrink-0">
                     ${rad.radical}
                   </div>
                   <div>
                     <div class="flex items-center gap-1.5 flex-wrap">
+                      ${kxBadge}
                       <h4 class="text-sm font-extrabold text-white">${rad.name}</h4>
                       <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase border border-amber-500/30">
                         [${rad.hanViet}]
                       </span>
                     </div>
                     <div class="text-[11px] text-slate-400 mt-0.5">
-                      ${rad.strokes} nét • ${rad.position}
+                      ${rad.strokes} nét • ${rad.variants || rad.position}
                     </div>
                   </div>
                 </div>
@@ -1487,7 +1870,7 @@ window.HSKRadicals = (function () {
                 <button
                   type="button"
                   data-rad-toggle-master="${rad.radical}"
-                  class="px-2 py-1 rounded-lg text-[11px] font-bold border transition ${
+                  class="px-2 py-1 rounded-lg text-[11px] font-bold border transition shrink-0 ${
                     rec.mastered
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                       : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -1513,7 +1896,7 @@ window.HSKRadicals = (function () {
                 ${charPills}
               </div>
               <span class="text-[11px] font-semibold text-indigo-400 whitespace-nowrap">
-                ${rad.hskWords.length} từ HSK 3 →
+                ${rad.hskWords.length > 0 ? `${rad.hskWords.length} từ HSK 3 →` : 'Xem chi tiết →'}
               </span>
             </div>
           </div>
@@ -1545,7 +1928,7 @@ window.HSKRadicals = (function () {
 
   function selectRadicalForInspector(radKey) {
     selectedRadicalKey = radKey;
-    const all = getEnrichedRadicals('full137');
+    const all = getEnrichedRadicals('all_merged');
     const found = all.find(r => r.radical === radKey) || all[0];
     if (found) {
       activeWriterChar = found.standalone || found.allChars[0] || '水';
@@ -1557,7 +1940,7 @@ window.HSKRadicals = (function () {
     const inspectorEl = document.getElementById('rad-inspector-panel');
     if (!inspectorEl) return;
 
-    const all = getEnrichedRadicals('full137');
+    const all = getEnrichedRadicals('all_merged');
     const rad = all.find(r => r.radical === selectedRadicalKey) || all[0];
     if (!rad) return;
 
@@ -1885,7 +2268,7 @@ window.HSKRadicals = (function () {
     const containerEl = document.getElementById('rad-subview-flashcard');
     if (!containerEl) return;
 
-    let deck = getEnrichedRadicals('core');
+    let deck = getEnrichedRadicals(fcDeckMode);
     if (fcOnlyUnmastered) {
       const unmastered = deck.filter(r => !window.HSKStorage.getRadicalRecord(r.radical).mastered);
       if (unmastered.length > 0) deck = unmastered;
@@ -1895,24 +2278,46 @@ window.HSKRadicals = (function () {
     const rad = deck[fcIndex];
     const rec = window.HSKStorage.getRadicalRecord(rad.radical);
 
-    const sampleWordsHTML = rad.hskWords
-      .slice(0, 6)
-      .map(
-        w => `<span class="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200"><strong class="font-hanzi-serif text-base text-white mr-1">${w.hanzi}</strong> [${w.hanViet}] ${w.meaning}</span>`
-      )
-      .join(' ');
+    const sampleWordsHTML = rad.hskWords.length > 0
+      ? rad.hskWords
+          .slice(0, 6)
+          .map(
+            w => `<span class="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200"><strong class="font-hanzi-serif text-base text-white mr-1">${w.hanzi}</strong> [${w.hanViet}] ${w.meaning}</span>`
+          )
+          .join(' ')
+      : rad.allChars
+          .map(
+            c => `<span class="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-sm font-hanzi-serif text-white">${c}</span>`
+          )
+          .join(' ');
 
     containerEl.innerHTML = `
       <div class="max-w-3xl mx-auto space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
           <div class="flex items-center gap-2.5">
             <span class="px-3 py-1 rounded-lg bg-slate-800 text-indigo-300 font-mono-code text-xs font-bold">
-              Bộ ${fcIndex + 1} / ${deck.length}
+              Thẻ ${fcIndex + 1} / ${deck.length}
             </span>
+            ${
+              rad.kangxiId
+                ? `<span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono-code text-xs font-bold border border-indigo-500/30">Bộ Khang Hy #${rad.kangxiId}</span>`
+                : ''
+            }
             <span class="text-xs font-semibold text-slate-300">${rad.name}</span>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              id="btn-rad-fc-deckmode"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                fcDeckMode === 'kangxi214'
+                  ? 'bg-indigo-600 text-white border-indigo-400'
+                  : 'bg-slate-800 text-indigo-300 border-slate-700 hover:text-white'
+              }"
+            >
+              ${fcDeckMode === 'kangxi214' ? '👑 Bộ thẻ: Đủ 214 Bộ Khang Hy' : '📚 Bộ thẻ: 50 Bộ Cốt Lõi (Bấm đổi sang 214 Bộ)'}
+            </button>
             <button
               type="button"
               id="btn-rad-fc-filter"
@@ -1922,7 +2327,7 @@ window.HSKRadicals = (function () {
                   : 'bg-slate-800 text-slate-300 border-slate-700'
               }"
             >
-              ${fcOnlyUnmastered ? '🎯 Đang lọc: Bộ Chưa Thuộc' : '📚 Đang hiện: Tất Cả 50 Bộ'}
+              ${fcOnlyUnmastered ? '🎯 Đang lọc: Bộ Chưa Thuộc' : 'Tất cả thẻ'}
             </button>
             <span class="px-2.5 py-1 rounded-full text-xs font-bold ${
               rec.mastered ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
@@ -1944,7 +2349,7 @@ window.HSKRadicals = (function () {
                 ${rad.radical}
               </div>
               <div class="px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-xs text-slate-300">
-                Số nét: <strong>${rad.strokes} nét</strong> • Vị trí: <strong>${rad.position}</strong>
+                ${rad.kangxiId ? `<strong>Bộ Khang Hy #${rad.kangxiId}</strong> • ` : ''}Số nét: <strong>${rad.strokes} nét</strong> • Vị trí: <strong>${rad.position}</strong>
               </div>
               <p class="text-xs text-slate-400 mt-5">
                 🔄 Bấm vào thẻ để lật xem giải phẫu bộ thủ & mẹo nhớ!
@@ -1957,7 +2362,7 @@ window.HSKRadicals = (function () {
                 <div class="flex items-center gap-4">
                   <div class="font-hanzi-serif text-6xl font-bold text-white">${rad.radical}</div>
                   <div class="text-left">
-                    <h3 class="text-xl font-extrabold text-white">${rad.name}</h3>
+                    <h3 class="text-xl font-extrabold text-white">${rad.name} ${rad.kangxiId ? `<span class="text-xs text-indigo-400 font-mono-code">(#${rad.kangxiId})</span>` : ''}</h3>
                     <div class="text-xs font-bold text-amber-300 uppercase">
                       Âm Hán Việt: [${rad.hanViet}] • Pinyin: ${rad.pinyin}
                     </div>
@@ -1990,7 +2395,7 @@ window.HSKRadicals = (function () {
               </div>
 
               <div class="space-y-1.5 text-left border-t border-slate-800 pt-3">
-                <div class="text-[11px] font-bold uppercase text-slate-400">Các từ HSK 3 tiêu biểu chứa bộ này:</div>
+                <div class="text-[11px] font-bold uppercase text-slate-400">Chữ Hán & từ vựng tiêu biểu chứa bộ này:</div>
                 <div class="flex flex-wrap gap-1.5">${sampleWordsHTML}</div>
               </div>
             </div>
@@ -2046,6 +2451,16 @@ window.HSKRadicals = (function () {
       speakBtn.addEventListener('click', e => {
         e.stopPropagation();
         window.HSKSound.speak(rad.standalone || rad.allChars[0], 0.9);
+      });
+    }
+
+    const deckModeBtn = document.getElementById('btn-rad-fc-deckmode');
+    if (deckModeBtn) {
+      deckModeBtn.addEventListener('click', () => {
+        fcDeckMode = fcDeckMode === 'core' ? 'kangxi214' : 'core';
+        fcIndex = 0;
+        fcFlipped = false;
+        renderFlashcardSubView();
       });
     }
 
@@ -2189,18 +2604,19 @@ window.HSKRadicals = (function () {
 
   function generateNextQuizQuestion() {
     quizLocked = false;
+    const poolList = getEnrichedRadicals(quizPoolMode);
     const coreList = getEnrichedRadicals('core');
     const types = quizMode === 'mixed' ? ['meaning', 'char_to_rad', 'twin_trap'] : [quizMode];
     const pickedType = types[Math.floor(Math.random() * types.length)];
 
-    const targetRad = coreList[Math.floor(Math.random() * coreList.length)];
-    const distractors = shuffle(coreList.filter(r => r.radical !== targetRad.radical)).slice(0, 3);
+    const targetRad = poolList[Math.floor(Math.random() * poolList.length)];
+    const distractors = shuffle(poolList.filter(r => r.radical !== targetRad.radical)).slice(0, 3);
 
     if (pickedType === 'meaning') {
       // Type 1: Given radical symbol -> Pick its meaning & name
       const options = shuffle([targetRad, ...distractors]).map(r => ({
         key: r.radical,
-        label: `${r.name} [${r.hanViet.toUpperCase()}] — ${r.meaning}`,
+        label: `${r.name} [${r.hanViet.toUpperCase()}]${r.kangxiId ? ` (#${r.kangxiId})` : ''} — ${r.meaning}`,
         isCorrect: r.radical === targetRad.radical
       }));
 
@@ -2209,7 +2625,7 @@ window.HSKRadicals = (function () {
         radKey: targetRad.radical,
         badge: 'Kiểu 1: Nhìn Bộ Thủ → Đoán Tên & Ý Nghĩa Biểu Ý',
         heroSymbol: targetRad.radical,
-        prompt: `Bộ thủ "${targetRad.radical}" (${targetRad.strokes} nét • ${targetRad.position}) mang tên và ý nghĩa gì?`,
+        prompt: `Bộ thủ "${targetRad.radical}" (${targetRad.kangxiId ? `Bộ Khang Hy #${targetRad.kangxiId} • ` : ''}${targetRad.strokes} nét) mang tên và ý nghĩa gì?`,
         subHint: `Chữ mẫu gợi ý: ${targetRad.allChars.slice(0, 4).join(', ')}`,
         options,
         explanation: `Bộ ${targetRad.radical} là ${targetRad.name} [${targetRad.hanViet}], chỉ: ${targetRad.meaning}. 💡 ${targetRad.mnemonic}`
@@ -2234,7 +2650,7 @@ window.HSKRadicals = (function () {
         heroSymbol: sampleWord ? sampleWord.hanzi : sampleChar,
         prompt: sampleWord
           ? `Từ "${sampleWord.hanzi}" (${sampleWord.meaning}) có chữ "${sampleChar}" chứa bộ thủ nào dưới đây?`
-          : `Chữ Hán "${sampleChar}" được cấu tạo bởi bộ thủ cốt lõi nào?`,
+          : `Chữ Hán "${sampleChar}" được cấu tạo bởi bộ thủ nào?`,
         subHint: `Hãy quan sát kỹ thành phần biểu ý của chữ "${sampleChar}"!`,
         options,
         explanation: `Chữ "${sampleChar}" chứa ${targetRad.name} (${targetRad.radical}) vì liên quan đến: ${targetRad.meaning}.`
@@ -2244,7 +2660,8 @@ window.HSKRadicals = (function () {
       const trapCandidates = coreList.filter(r => r.confusableWith);
       const mainRad = trapCandidates[Math.floor(Math.random() * trapCandidates.length)] || targetRad;
       const sampleWord = mainRad.hskWords[0];
-      const options = shuffle([mainRad, ...distractors]).map(r => ({
+      const trapDistractors = shuffle(coreList.filter(r => r.radical !== mainRad.radical)).slice(0, 3);
+      const options = shuffle([mainRad, ...trapDistractors]).map(r => ({
         key: r.radical,
         label: `${r.radical} (${r.name} — ${r.meaning.split(',')[0]})`,
         isCorrect: r.radical === mainRad.radical
@@ -2285,6 +2702,17 @@ window.HSKRadicals = (function () {
             </button>
             <button type="button" data-rad-qmode="twin_trap" class="px-3 py-1.5 rounded-xl text-xs font-bold ${quizMode === 'twin_trap' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300'}">
               3️⃣ Bẫy Bộ Sinh Đôi
+            </button>
+            <button
+              type="button"
+              id="btn-rad-quiz-pool"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                quizPoolMode === 'kangxi214'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-slate-800 text-indigo-300 border-slate-700'
+              }"
+            >
+              ${quizPoolMode === 'kangxi214' ? '👑 Đề thi: Đủ 214 Bộ Khang Hy' : '📚 Đề thi: 50 Bộ Cốt Lõi'}
             </button>
           </div>
 
@@ -2344,6 +2772,15 @@ window.HSKRadicals = (function () {
         renderQuizSubView();
       });
     });
+
+    const poolBtn = document.getElementById('btn-rad-quiz-pool');
+    if (poolBtn) {
+      poolBtn.addEventListener('click', () => {
+        quizPoolMode = quizPoolMode === 'core' ? 'kangxi214' : 'core';
+        generateNextQuizQuestion();
+        renderQuizSubView();
+      });
+    }
 
     const sniperBtn = document.getElementById('btn-rad-jump-sniper');
     if (sniperBtn) {
@@ -2424,6 +2861,17 @@ window.HSKRadicals = (function () {
         renderExplorerSubView();
       });
     });
+
+    const strokeSelectEl = document.getElementById('rad-stroke-filter');
+    if (strokeSelectEl) {
+      strokeSelectEl.addEventListener('change', () => {
+        currentStrokeFilter = parseInt(strokeSelectEl.value, 10) || 0;
+        if (currentStrokeFilter >= 9 && currentCategory !== 'kangxi214') {
+          currentCategory = 'kangxi214';
+        }
+        renderExplorerSubView();
+      });
+    }
 
     const searchInput = document.getElementById('rad-search-input');
     if (searchInput) {
