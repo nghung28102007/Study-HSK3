@@ -306,14 +306,9 @@ html.light .ime-candidate-bar {
   color: #e0e7ff;
 }
 
-/* Sticky Scrollable Inspector Panel for Radicals & Reading */
-@media (min-width: 1024px) {
-  #rad-inspector-panel {
-    position: sticky;
-    top: 6.25rem;
-    max-height: calc(100vh - 7.25rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scroll-behavior: smooth;
-  }
+/* Smooth transition when aligning Radical Inspector Panel to clicked card */
+#rad-inspector-panel {
+  position: relative !important;
+  top: auto !important;
+  transition: margin-top 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }

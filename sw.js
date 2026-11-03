@@ -1,7 +1,7 @@
 /**
  * Service Worker for HSK 3 Orthographic Lab (Offline App Shell + HanziWriter Stroke Cache)
  */
-const CACHE_NAME = 'hsk3-orthographic-lab-v5';
+const CACHE_NAME = 'hsk3-orthographic-lab-v6';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -17,8 +17,9 @@ const CORE_ASSETS = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).catch(() => {})
   );
 });
 
@@ -30,20 +31,18 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Network-First strategy so updates on Netlify are always visible immediately
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request)
-        .then(networkResp => {
-          if (networkResp && networkResp.status === 200) {
-            const copy = networkResp.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
-          return networkResp;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request)
+      .then(networkResp => {
+        if (networkResp && networkResp.status === 200) {
+          const copy = networkResp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        }
+        return networkResp;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

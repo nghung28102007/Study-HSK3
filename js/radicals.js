@@ -1947,8 +1947,24 @@ window.HSKRadicals = (function () {
     }
     renderExplorerSubView();
 
+    const gridEl = document.getElementById('rad-explorer-grid');
     const inspectorEl = document.getElementById('rad-inspector-panel');
     if (!inspectorEl) return;
+
+    // Align the non-sticky inspector panel to current viewport position on desktop so it never feels "fixed/stuck" when scrolling the page
+    if (gridEl && window.innerWidth >= 1024) {
+      const gridRect = gridEl.getBoundingClientRect();
+      const topNavHeight = 100;
+      if (gridRect.top < topNavHeight) {
+        const desiredOffset = Math.max(0, Math.round(topNavHeight - gridRect.top));
+        const maxOffset = Math.max(0, gridEl.offsetHeight - 320);
+        inspectorEl.style.marginTop = `${Math.min(desiredOffset, maxOffset)}px`;
+      } else {
+        inspectorEl.style.marginTop = '0px';
+      }
+    } else {
+      inspectorEl.style.marginTop = '0px';
+    }
 
     setTimeout(() => {
       if (scrollToVocab) {
@@ -1956,11 +1972,8 @@ window.HSKRadicals = (function () {
         if (vocabSec) {
           vocabSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      } else {
-        inspectorEl.scrollTop = 0;
-        if (window.innerWidth < 1024) {
-          inspectorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+      } else if (window.innerWidth < 1024) {
+        inspectorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 40);
   }
@@ -2102,19 +2115,22 @@ window.HSKRadicals = (function () {
           <div class="text-xs text-amber-200 leading-relaxed">
             💡 <strong>Mẹo nhớ nhanh:</strong> ${rad.mnemonic}
           </div>
-          <div class="pt-1.5 flex items-center justify-between border-t border-slate-800/80">
-            <span class="text-[11px] text-slate-400">Chữ mẫu: <strong class="font-hanzi-serif text-sm text-white">${rad.allChars.slice(0, 8).join('  ')}</strong></span>
-            <button
-              type="button"
-              id="btn-rad-scroll-vocab"
-              class="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold border border-indigo-500/30 transition"
-            >
-              📚 Xem ${rad.hskWords.length} từ chứa bộ này ↓
-            </button>
-          </div>
         </div>
 
         ${confusableHTML}
+
+        <!-- HSK 3 Vocabulary Containing This Radical (PLACED IMMEDIATELY VISIBLE NEAR TOP) -->
+        <div id="rad-inspector-vocab-section" class="p-3.5 rounded-2xl bg-slate-950/90 border border-indigo-500/30 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
+              📚 Từ Vựng HSK 3 Chứa ${rad.name} (${rad.hskWords.length} từ):
+            </div>
+            <span class="text-[11px] text-slate-400">Lăn chuột tự nhiên để xem hết ↓</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ${hskWordsHTML}
+          </div>
+        </div>
 
         <!-- Interactive HanziWriter Studio for Radical & Sample Characters -->
         <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
@@ -2164,45 +2180,8 @@ window.HSKRadicals = (function () {
             </div>
           </div>
         </div>
-
-        <!-- HSK 3 Vocabulary Containing This Radical -->
-        <div id="rad-inspector-vocab-section" class="space-y-2.5 pt-2 border-t border-slate-800">
-          <div class="flex items-center justify-between">
-            <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
-              📚 Từ Vựng HSK 3 Chứa ${rad.name} (${rad.hskWords.length} từ):
-            </div>
-            <button
-              type="button"
-              id="btn-rad-scroll-top"
-              class="text-[11px] font-semibold text-slate-400 hover:text-white transition"
-            >
-              ↑ Lên đầu bảng
-            </button>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-2">
-            ${hskWordsHTML}
-          </div>
-        </div>
       </div>
     `;
-
-    // Bind scroll jump buttons inside inspector
-    const scrollVocabBtn = document.getElementById('btn-rad-scroll-vocab');
-    if (scrollVocabBtn) {
-      scrollVocabBtn.addEventListener('click', () => {
-        const vocabSec = document.getElementById('rad-inspector-vocab-section');
-        if (vocabSec) {
-          vocabSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    }
-
-    const scrollTopBtn = document.getElementById('btn-rad-scroll-top');
-    if (scrollTopBtn) {
-      scrollTopBtn.addEventListener('click', () => {
-        inspectorEl.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
 
     // Bind audio & mastery buttons
     const speakBtn = document.getElementById('btn-rad-inspector-speak');
@@ -2924,6 +2903,8 @@ window.HSKRadicals = (function () {
     rootEl.querySelectorAll('[data-rad-cat]').forEach(btn => {
       btn.addEventListener('click', () => {
         currentCategory = btn.getAttribute('data-rad-cat');
+        const inspectorEl = document.getElementById('rad-inspector-panel');
+        if (inspectorEl) inspectorEl.style.marginTop = '0px';
         renderExplorerSubView();
       });
     });
@@ -2935,6 +2916,8 @@ window.HSKRadicals = (function () {
         if (currentStrokeFilter >= 9 && currentCategory !== 'kangxi214') {
           currentCategory = 'kangxi214';
         }
+        const inspectorEl = document.getElementById('rad-inspector-panel');
+        if (inspectorEl) inspectorEl.style.marginTop = '0px';
         renderExplorerSubView();
       });
     }
@@ -2943,6 +2926,8 @@ window.HSKRadicals = (function () {
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         searchQuery = searchInput.value || '';
+        const inspectorEl = document.getElementById('rad-inspector-panel');
+        if (inspectorEl) inspectorEl.style.marginTop = '0px';
         renderExplorerSubView();
       });
     }
