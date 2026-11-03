@@ -1860,6 +1860,7 @@ window.HSKRadicals = (function () {
                       <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase border border-amber-500/30">
                         [${rad.hanViet}]
                       </span>
+                      ${rad.pinyin ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono-code text-[10px] font-semibold">${rad.pinyin}</span>` : ''}
                     </div>
                     <div class="text-[11px] text-slate-400 mt-0.5">
                       ${rad.strokes} nét • ${rad.variants || rad.position}
@@ -2030,12 +2031,13 @@ window.HSKRadicals = (function () {
             w => `
             <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/40 flex items-center justify-between gap-2 transition">
               <div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="font-hanzi-serif text-xl font-bold text-white">${w.hanzi}</span>
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 font-mono-code text-xs font-bold border border-indigo-500/30">${w.pinyin}</span>
                   <span class="text-[11px] font-bold text-amber-300 uppercase">[${w.hanViet}]</span>
                   <span class="text-[10px] text-slate-500">Bài ${w.lesson}</span>
                 </div>
-                <div class="text-xs text-slate-300">${w.meaning}</div>
+                <div class="text-xs text-slate-300 mt-0.5">${w.meaning}</div>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
@@ -2076,6 +2078,7 @@ window.HSKRadicals = (function () {
                 <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase border border-amber-500/30">
                   Hán Việt: ${rad.hanViet}
                 </span>
+                ${rad.pinyin ? `<span class="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 font-mono-code text-xs font-bold border border-indigo-500/30">Pinyin: ${rad.pinyin}</span>` : ''}
               </div>
               <div class="text-xs text-indigo-300 font-medium mt-0.5">${rad.variants}</div>
               <div class="text-xs text-slate-400 mt-0.5">Số nét: <strong>${rad.strokes} nét</strong> • Vị trí: <strong>${rad.position}</strong></div>
@@ -2327,7 +2330,7 @@ window.HSKRadicals = (function () {
       ? rad.hskWords
           .slice(0, 6)
           .map(
-            w => `<span class="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200"><strong class="font-hanzi-serif text-base text-white mr-1">${w.hanzi}</strong> [${w.hanViet}] ${w.meaning}</span>`
+            w => `<span class="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200"><strong class="font-hanzi-serif text-base text-white mr-1">${w.hanzi}</strong> <span class="text-indigo-300 font-mono-code font-semibold">${w.pinyin}</span> <span class="text-amber-300">[${w.hanViet}]</span> — ${w.meaning}</span>`
           )
           .join(' ')
       : rad.allChars
