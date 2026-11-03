@@ -1552,7 +1552,7 @@ window.HSKRadicals = (function () {
       };
       const matchedWords = [...matched.words];
       allVocab.forEach(w => {
-        if (matchedWords.length < 18 && !matchedWords.some(mw => mw.id === w.id)) {
+        if (!matchedWords.some(mw => mw.id === w.id)) {
           if (rad.sampleChars.some(sc => w.hanzi.includes(sc))) {
             matchedWords.push(w);
           }
@@ -1607,7 +1607,7 @@ window.HSKRadicals = (function () {
       });
 
       allVocab.forEach(w => {
-        if (hskWords.length < 18 && !hskWords.some(mw => mw.id === w.id)) {
+        if (!hskWords.some(mw => mw.id === w.id)) {
           if (sampleChars.some(sc => sc.length === 1 && w.hanzi.includes(sc))) {
             hskWords.push(w);
           }
@@ -1895,9 +1895,13 @@ window.HSKRadicals = (function () {
                 <span class="text-[10px] text-slate-400 mr-0.5">Chữ mẫu:</span>
                 ${charPills}
               </div>
-              <span class="text-[11px] font-semibold text-indigo-400 whitespace-nowrap">
-                ${rad.hskWords.length > 0 ? `${rad.hskWords.length} từ HSK 3 →` : 'Xem chi tiết →'}
-              </span>
+              <button
+                type="button"
+                data-rad-jump-vocab="${rad.radical}"
+                class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline-offset-2 hover:underline whitespace-nowrap"
+              >
+                ${rad.hskWords.length > 0 ? `📚 ${rad.hskWords.length} từ HSK 3 →` : 'Xem chi tiết →'}
+              </button>
             </div>
           </div>
         `;
@@ -1906,9 +1910,17 @@ window.HSKRadicals = (function () {
 
     gridEl.querySelectorAll('[data-rad-card]').forEach(card => {
       card.addEventListener('click', e => {
-        if (e.target.closest('[data-rad-toggle-master]')) return;
+        if (e.target.closest('[data-rad-toggle-master]') || e.target.closest('[data-rad-jump-vocab]')) return;
         const key = card.getAttribute('data-rad-card');
-        selectRadicalForInspector(key);
+        selectRadicalForInspector(key, false);
+      });
+    });
+
+    gridEl.querySelectorAll('[data-rad-jump-vocab]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const key = btn.getAttribute('data-rad-jump-vocab');
+        selectRadicalForInspector(key, true);
       });
     });
 
@@ -1926,7 +1938,7 @@ window.HSKRadicals = (function () {
     renderRadicalInspector();
   }
 
-  function selectRadicalForInspector(radKey) {
+  function selectRadicalForInspector(radKey, scrollToVocab = false) {
     selectedRadicalKey = radKey;
     const all = getEnrichedRadicals('all_merged');
     const found = all.find(r => r.radical === radKey) || all[0];
@@ -1934,6 +1946,23 @@ window.HSKRadicals = (function () {
       activeWriterChar = found.standalone || found.allChars[0] || '水';
     }
     renderExplorerSubView();
+
+    const inspectorEl = document.getElementById('rad-inspector-panel');
+    if (!inspectorEl) return;
+
+    setTimeout(() => {
+      if (scrollToVocab) {
+        const vocabSec = document.getElementById('rad-inspector-vocab-section');
+        if (vocabSec) {
+          vocabSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        inspectorEl.scrollTop = 0;
+        if (window.innerWidth < 1024) {
+          inspectorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 40);
   }
 
   function renderRadicalInspector() {
@@ -1984,10 +2013,9 @@ window.HSKRadicals = (function () {
 
     const hskWordsHTML = rad.hskWords.length > 0
       ? rad.hskWords
-          .slice(0, 12)
           .map(
             w => `
-            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/40 flex items-center justify-between gap-2 transition">
               <div>
                 <div class="flex items-center gap-2">
                   <span class="font-hanzi-serif text-xl font-bold text-white">${w.hanzi}</span>
@@ -1996,7 +2024,7 @@ window.HSKRadicals = (function () {
                 </div>
                 <div class="text-xs text-slate-300">${w.meaning}</div>
               </div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   data-rad-word-speak="${w.hanzi}"
@@ -2018,18 +2046,19 @@ window.HSKRadicals = (function () {
           `
           )
           .join('')
-      : `<div class="text-xs text-slate-400">Chữ mẫu thông dụng: ${rad.allChars.join(', ')}</div>`;
+      : `<div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">Chữ Hán mẫu thông dụng chứa bộ này: <strong class="font-hanzi-serif text-base text-white ml-1">${rad.allChars.join(' • ')}</strong></div>`;
 
     inspectorEl.innerHTML = `
       <div class="space-y-4">
         <!-- Header Info -->
         <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
           <div class="flex items-center gap-3.5">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/30 to-slate-950 border-2 border-indigo-400 flex items-center justify-center font-hanzi-serif text-5xl font-bold text-white shadow-lg">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/30 to-slate-950 border-2 border-indigo-400 flex items-center justify-center font-hanzi-serif text-5xl font-bold text-white shadow-lg shrink-0">
               ${rad.radical}
             </div>
             <div>
               <div class="flex items-center gap-2 flex-wrap">
+                ${rad.kangxiId ? `<span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono-code text-xs font-bold border border-indigo-500/30">Bộ #${rad.kangxiId}</span>` : ''}
                 <h3 class="text-lg font-extrabold text-white">${rad.name}</h3>
                 <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase border border-amber-500/30">
                   Hán Việt: ${rad.hanViet}
@@ -2040,7 +2069,7 @@ window.HSKRadicals = (function () {
             </div>
           </div>
 
-          <div class="flex flex-col items-end gap-1.5">
+          <div class="flex flex-col items-end gap-1.5 shrink-0">
             <button
               type="button"
               id="btn-rad-inspector-speak"
@@ -2072,6 +2101,16 @@ window.HSKRadicals = (function () {
           </div>
           <div class="text-xs text-amber-200 leading-relaxed">
             💡 <strong>Mẹo nhớ nhanh:</strong> ${rad.mnemonic}
+          </div>
+          <div class="pt-1.5 flex items-center justify-between border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Chữ mẫu: <strong class="font-hanzi-serif text-sm text-white">${rad.allChars.slice(0, 8).join('  ')}</strong></span>
+            <button
+              type="button"
+              id="btn-rad-scroll-vocab"
+              class="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold border border-indigo-500/30 transition"
+            >
+              📚 Xem ${rad.hskWords.length} từ chứa bộ này ↓
+            </button>
           </div>
         </div>
 
@@ -2127,16 +2166,43 @@ window.HSKRadicals = (function () {
         </div>
 
         <!-- HSK 3 Vocabulary Containing This Radical -->
-        <div class="space-y-2">
-          <div class="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-            📚 Từ Vựng HSK 3 Chứa ${rad.name} (${rad.hskWords.length} từ):
+        <div id="rad-inspector-vocab-section" class="space-y-2.5 pt-2 border-t border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
+              📚 Từ Vựng HSK 3 Chứa ${rad.name} (${rad.hskWords.length} từ):
+            </div>
+            <button
+              type="button"
+              id="btn-rad-scroll-top"
+              class="text-[11px] font-semibold text-slate-400 hover:text-white transition"
+            >
+              ↑ Lên đầu bảng
+            </button>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-2">
             ${hskWordsHTML}
           </div>
         </div>
       </div>
     `;
+
+    // Bind scroll jump buttons inside inspector
+    const scrollVocabBtn = document.getElementById('btn-rad-scroll-vocab');
+    if (scrollVocabBtn) {
+      scrollVocabBtn.addEventListener('click', () => {
+        const vocabSec = document.getElementById('rad-inspector-vocab-section');
+        if (vocabSec) {
+          vocabSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    const scrollTopBtn = document.getElementById('btn-rad-scroll-top');
+    if (scrollTopBtn) {
+      scrollTopBtn.addEventListener('click', () => {
+        inspectorEl.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     // Bind audio & mastery buttons
     const speakBtn = document.getElementById('btn-rad-inspector-speak');

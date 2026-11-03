@@ -1,7 +1,7 @@
 /**
  * Service Worker for HSK 3 Orthographic Lab (Offline App Shell + HanziWriter Stroke Cache)
  */
-const CACHE_NAME = 'hsk3-orthographic-lab-v4';
+const CACHE_NAME = 'hsk3-orthographic-lab-v5';
 const CORE_ASSETS = [
   './',
   './index.html',
